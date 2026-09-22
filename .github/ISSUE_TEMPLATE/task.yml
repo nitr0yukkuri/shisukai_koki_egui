@@ -1,0 +1,35 @@
+name: Task
+description: 実装・調査・ドキュメントなど、単一責任の作業を作成する
+title: ""
+labels: []
+body:
+  - type: textarea
+    id: purpose
+    attributes:
+      label: 目的
+      description: このIssueで何を達成するか
+    validations:
+      required: true
+
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景
+      description: なぜ必要か。関連するADRやIssueがあれば記載する
+
+  - type: textarea
+    id: done
+    attributes:
+      label: 完了条件
+      description: 完了を客観的に判断できるチェック項目
+      placeholder: |
+        - [ ] 条件1
+        - [ ] 条件2
+    validations:
+      required: true
+
+  - type: textarea
+    id: out
+    attributes:
+      label: やらないこと
+      description: スコープ外を明示するとIssueが巨大化しにくい
