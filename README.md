@@ -23,3 +23,21 @@
 
 プロダクト要件、Go構成、DB、Queue、Kubernetes構成などは未決定です。
 決定前に実装を固定せず、Issue / ADR で合意してから進めます。
+
+
+## Development commands
+
+よく使う開発コマンドは `Makefile` にまとめています。
+
+```bash
+make help
+make setup
+make run
+make fmt
+make test
+make lint
+make build
+make check
+```
+
+現時点ではGoプロジェクト自体が未初期化のため、`go.mod` や `cmd/api` が必要なコマンドは初期化後に利用できます。
