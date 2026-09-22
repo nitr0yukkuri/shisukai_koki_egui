@@ -1,4 +1,4 @@
-name: CI
+name: 品質チェック
 
 on:
   pull_request:
@@ -17,18 +17,18 @@ concurrency:
 
 jobs:
   quality-gate:
-    name: quality-gate
+    name: 品質ゲート
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
-      - name: Checkout
+      - name: リポジトリを取得
         uses: actions/checkout@v5
 
-      - name: Check whitespace errors
+      - name: 空白エラーを確認
         run: git diff --check
 
-      - name: Detect Go module
+      - name: Goプロジェクトを確認
         id: go
         shell: bash
         run: |
@@ -36,17 +36,17 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "go.mod not found; Go checks are skipped until the Go project is initialized."
+            echo "go.modが見つからないため、Goプロジェクト初期化まではGo関連のチェックをスキップします。"
           fi
 
-      - name: Set up Go
+      - name: Goをセットアップ
         if: steps.go.outputs.enabled == 'true'
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
 
-      - name: Check gofmt
+      - name: gofmtを確認
         if: steps.go.outputs.enabled == 'true'
         shell: bash
         run: |
@@ -54,20 +54,20 @@ jobs:
           if [[ -n "$files" ]]; then
             unformatted="$(gofmt -l $files)"
             if [[ -n "$unformatted" ]]; then
-              echo "The following files are not gofmt formatted:"
+              echo "次のファイルがgofmtされていません:"
               echo "$unformatted"
               exit 1
             fi
           fi
 
-      - name: Go vet
+      - name: Go vetを実行
         if: steps.go.outputs.enabled == 'true'
         run: go vet ./...
 
-      - name: Go test
+      - name: Goのテストを実行
         if: steps.go.outputs.enabled == 'true'
         run: go test ./...
 
-      - name: Go build
+      - name: Goをビルド
         if: steps.go.outputs.enabled == 'true'
         run: go build ./...
