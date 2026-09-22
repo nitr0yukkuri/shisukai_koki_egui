@@ -8,62 +8,62 @@ reviews:
   path_instructions:
     - path: "internal/**"
       instructions: |
-        - Check package boundaries and dependency direction.
-        - Domain logic must not depend directly on infrastructure implementations.
-        - Flag circular dependencies and responsibilities that are mixed across modules.
-        - Check error handling, context propagation, concurrency safety, and resource cleanup.
-        - When asynchronous processing is involved, check retry behavior, idempotency, duplicate delivery, timeout handling, and graceful shutdown.
+        - パッケージ境界と依存方向が適切か確認してください。
+        - ドメインロジックがインフラストラクチャの具体実装へ直接依存していないか確認してください。
+        - 循環依存や、複数の責務が1つのモジュールに混在している場合は指摘してください。
+        - エラーハンドリング、contextの伝播、並行処理の安全性、リソース解放を確認してください。
+        - 非同期処理では、retry、冪等性、重複配送、timeout、graceful shutdownの扱いを確認してください。
 
     - path: "cmd/**"
       instructions: |
-        - Keep entrypoints thin.
-        - Flag business logic that should live in internal packages.
-        - Check startup errors, signal handling, graceful shutdown, and dependency wiring.
+        - entrypointは薄く保ち、起動処理と依存関係の組み立てを中心にしてください。
+        - internal packageに置くべき業務ロジックが含まれている場合は指摘してください。
+        - 起動時エラー、signal handling、graceful shutdown、dependency wiringを確認してください。
 
     - path: "infra/**"
       instructions: |
-        - Keep infrastructure details behind clear interfaces where practical.
-        - Flag infrastructure concerns leaking into domain logic.
-        - Check connection lifecycle, timeout configuration, retry behavior, and secret handling.
+        - 必要に応じてインフラストラクチャの詳細を明確なinterfaceの後ろに隠してください。
+        - インフラストラクチャ固有の関心事がドメインロジックへ漏れている場合は指摘してください。
+        - 接続のライフサイクル、timeout、retry、secretの扱いを確認してください。
 
     - path: "deploy/**"
       instructions: |
-        - Review Kubernetes changes for readiness and liveness probes, resource settings, safe rollouts, and configuration separation.
-        - Flag secrets committed as plain text.
-        - Check that API and Worker workloads can scale independently where intended.
+        - Kubernetesの変更について、readiness / liveness probe、resource設定、安全なrollout、設定値の分離を確認してください。
+        - secretが平文でコミットされている場合は指摘してください。
+        - 意図している場合、APIとWorkerを独立してscaleできる構成になっているか確認してください。
 
     - path: ".github/workflows/**"
       instructions: |
-        - Check for least-privilege permissions.
-        - Flag secrets or credentials committed directly in workflow files.
-        - Check that CI failures are visible and not silently ignored.
-        - Review cache configuration for correctness.
-        - Check that build and test steps are reproducible.
+        - permissionsが最小権限になっているか確認してください。
+        - secretやcredentialがworkflowへ直接書かれている場合は指摘してください。
+        - CIの失敗が見える状態で、失敗を握り潰していないか確認してください。
+        - cache設定が正しいか確認してください。
+        - buildとtestが再現可能な構成になっているか確認してください。
 
     - path: "**/*_test.go"
       instructions: |
-        - Check that tests verify behavior rather than implementation details.
-        - Prefer table-driven tests when multiple input and output cases share the same structure.
-        - Check edge cases, error paths, retry behavior, and concurrency where relevant.
-        - Flag flaky tests and tests that depend on uncontrolled external services.
+        - 実装の内部構造ではなく、振る舞いを検証するtestになっているか確認してください。
+        - 同じ構造で複数の入出力を検証する場合は、必要に応じてtable-driven testを提案してください。
+        - 境界値、エラー経路、retry、並行処理を必要に応じて確認してください。
+        - flakyなtestや、制御できない外部サービスに依存するtestは指摘してください。
 
     - path: "docs/adr/**"
       instructions: |
-        - Check that architecture decisions explain context, decision, alternatives, and consequences.
-        - Flag implementation changes that contradict an accepted ADR without documenting a replacement decision.
+        - アーキテクチャ判断にContext、Decision、Alternatives、Consequencesが含まれているか確認してください。
+        - AcceptedなADRと矛盾する実装変更に、新しい判断や置き換えの記録がない場合は指摘してください。
 
     - path: "docs/**"
       instructions: |
-        - Check technical accuracy and consistency with the current implementation.
-        - Flag stale commands, architecture descriptions, or terminology.
+        - 技術的に正確で、現在の実装と矛盾していないか確認してください。
+        - 古くなったコマンド、アーキテクチャ説明、用語があれば指摘してください。
 
 code_generation:
   unit_tests:
     path_instructions:
       - path: "**/*.go"
         instructions: |
-          - Prefer standard Go testing conventions.
-          - Prefer table-driven tests when appropriate.
-          - Cover success cases, error paths, boundary values, and concurrency behavior when relevant.
-          - Avoid real network calls unless the test is explicitly an integration test.
-          - Keep tests deterministic and readable.
+          - Go標準のtestingの慣習を優先してください。
+          - 適している場合はtable-driven testを使ってください。
+          - 正常系、エラー経路、境界値、必要に応じて並行処理をカバーしてください。
+          - integration testとして明示されていない限り、実ネットワークへのアクセスは避けてください。
+          - testは決定的で読みやすく保ってください。
