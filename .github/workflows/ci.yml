@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: quality-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Check whitespace errors
+        run: git diff --check
+
+      - name: Detect Go module
+        id: go
+        shell: bash
+        run: |
+          if [[ -f go.mod ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "go.mod not found; Go checks are skipped until the Go project is initialized."
+          fi
+
+      - name: Set up Go
+        if: steps.go.outputs.enabled == 'true'
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check gofmt
+        if: steps.go.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          files="$(find . -type f -name '*.go' -not -path './vendor/*' -print)"
+          if [[ -n "$files" ]]; then
+            unformatted="$(gofmt -l $files)"
+            if [[ -n "$unformatted" ]]; then
+              echo "The following files are not gofmt formatted:"
+              echo "$unformatted"
+              exit 1
+            fi
+          fi
+
+      - name: Go vet
+        if: steps.go.outputs.enabled == 'true'
+        run: go vet ./...
+
+      - name: Go test
+        if: steps.go.outputs.enabled == 'true'
+        run: go test ./...
+
+      - name: Go build
+        if: steps.go.outputs.enabled == 'true'
+        run: go build ./...
