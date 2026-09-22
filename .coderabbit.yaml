@@ -32,9 +32,11 @@ reviews:
 
     - path: ".github/workflows/**"
       instructions: |
-        - Review CI and CD for least privilege, secret safety, reproducibility, caching correctness, and failure visibility.
-        - Do not treat CodeRabbit approval as a required merge gate.
-        - Prefer deterministic checks such as tests, lint, build, and integration tests as required gates.
+        - Check for least-privilege permissions.
+        - Flag secrets or credentials committed directly in workflow files.
+        - Check that CI failures are visible and not silently ignored.
+        - Review cache configuration for correctness.
+        - Check that build and test steps are reproducible.
 
     - path: "**/*_test.go"
       instructions: |
