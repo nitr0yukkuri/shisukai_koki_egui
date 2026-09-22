@@ -1,0 +1,65 @@
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+
+  path_instructions:
+    - path: "internal/**"
+      instructions: |
+        - Check package boundaries and dependency direction.
+        - Domain logic must not depend directly on infrastructure implementations.
+        - Flag circular dependencies and responsibilities that are mixed across modules.
+        - Check error handling, context propagation, concurrency safety, and resource cleanup.
+        - When asynchronous processing is involved, check retry behavior, idempotency, duplicate delivery, timeout handling, and graceful shutdown.
+
+    - path: "cmd/**"
+      instructions: |
+        - Keep entrypoints thin.
+        - Flag business logic that should live in internal packages.
+        - Check startup errors, signal handling, graceful shutdown, and dependency wiring.
+
+    - path: "infra/**"
+      instructions: |
+        - Keep infrastructure details behind clear interfaces where practical.
+        - Flag infrastructure concerns leaking into domain logic.
+        - Check connection lifecycle, timeout configuration, retry behavior, and secret handling.
+
+    - path: "deploy/**"
+      instructions: |
+        - Review Kubernetes changes for readiness and liveness probes, resource settings, safe rollouts, and configuration separation.
+        - Flag secrets committed as plain text.
+        - Check that API and Worker workloads can scale independently where intended.
+
+    - path: ".github/workflows/**"
+      instructions: |
+        - Review CI and CD for least privilege, secret safety, reproducibility, caching correctness, and failure visibility.
+        - Do not treat CodeRabbit approval as a required merge gate.
+        - Prefer deterministic checks such as tests, lint, build, and integration tests as required gates.
+
+    - path: "**/*_test.go"
+      instructions: |
+        - Check that tests verify behavior rather than implementation details.
+        - Prefer table-driven tests when multiple input and output cases share the same structure.
+        - Check edge cases, error paths, retry behavior, and concurrency where relevant.
+        - Flag flaky tests and tests that depend on uncontrolled external services.
+
+    - path: "docs/adr/**"
+      instructions: |
+        - Check that architecture decisions explain context, decision, alternatives, and consequences.
+        - Flag implementation changes that contradict an accepted ADR without documenting a replacement decision.
+
+    - path: "docs/**"
+      instructions: |
+        - Check technical accuracy and consistency with the current implementation.
+        - Flag stale commands, architecture descriptions, or terminology.
+
+code_generation:
+  unit_tests:
+    path_instructions:
+      - path: "**/*.go"
+        instructions: |
+          - Prefer standard Go testing conventions.
+          - Prefer table-driven tests when appropriate.
+          - Cover success cases, error paths, boundary values, and concurrency behavior when relevant.
+          - Avoid real network calls unless the test is explicitly an integration test.
+          - Keep tests deterministic and readable.
