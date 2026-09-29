@@ -6,64 +6,79 @@ reviews:
     drafts: false
 
   path_instructions:
-    - path: "internal/**"
+    - path: "apps/desktop/**"
       instructions: |
-        - パッケージ境界と依存方向が適切か確認してください。
-        - ドメインロジックがインフラストラクチャの具体実装へ直接依存していないか確認してください。
-        - 循環依存や、複数の責務が1つのモジュールに混在している場合は指摘してください。
-        - エラーハンドリング、contextの伝播、並行処理の安全性、リソース解放を確認してください。
-        - 非同期処理では、retry、冪等性、重複配送、timeout、graceful shutdownの扱いを確認してください。
+        - Electronのmain / preload / rendererの責務境界を確認してください。
+        - contextIsolation、sandbox、nodeIntegration、IPCの公開範囲が安全な設定になっているか確認してください。
+        - rendererへNode.jsのfilesystem、任意のIPC、秘密情報を直接公開していないか確認してください。
+        - BrowserWindowの透明・最前面・クリック透過・表示切替が、Zoom操作や画面共有を妨げないか確認してください。
+        - 外部入力の字幕・AI結果をDOMへ表示する際のXSS、HTML挿入、スキーマ検証を確認してください。
+        - UI状態、WebSocket切断、再接続、共有モード、ショートカットの扱いを確認してください。
 
-    - path: "cmd/**"
+    - path: "apps/server/**"
       instructions: |
-        - entrypointは薄く保ち、起動処理と依存関係の組み立てを中心にしてください。
-        - internal packageに置くべき業務ロジックが含まれている場合は指摘してください。
-        - 起動時エラー、signal handling、graceful shutdown、dependency wiringを確認してください。
+        - Node.js / TypeScriptの責務分離と依存方向を確認してください。
+        - Zoom RTMSのWebhook検証、接続・切断、再接続、timeout、retry、graceful shutdownを確認してください。
+        - 字幕の話者・時刻・sequence、重複排除、順序、元字幕と表示用字幕の分離を確認してください。
+        - WebSocket配信の認証、接続管理、再接続後の状態復元、重複配送を確認してください。
+        - AI処理のタイムアウト、構造化出力の検証、失敗時の再実行、promptやモデル情報の扱いを確認してください。
+        - ログへ字幕全文、JWT、APIキー、Supabase service role keyを出力していないか確認してください。
 
-    - path: "infra/**"
+    - path: "packages/contracts/**"
       instructions: |
-        - 必要に応じてインフラストラクチャの詳細を明確なinterfaceの後ろに隠してください。
-        - インフラストラクチャ固有の関心事がドメインロジックへ漏れている場合は指摘してください。
-        - 接続のライフサイクル、timeout、retry、secretの扱いを確認してください。
+        - ElectronとNode.js間で共有する型・スキーマに互換性があるか確認してください。
+        - WebSocketイベントとRESTレスポンスの必須項目、version、sequence、エラー形式を確認してください。
+        - 外部入力を信頼せず、実行時バリデーションを行う設計になっているか確認してください。
 
-    - path: "deploy/**"
+    - path: "supabase/**"
       instructions: |
-        - Kubernetesの変更について、readiness / liveness probe、resource設定、安全なrollout、設定値の分離を確認してください。
-        - secretが平文でコミットされている場合は指摘してください。
-        - 意図している場合、APIとWorkerを独立してscaleできる構成になっているか確認してください。
-
-    - path: ".github/workflows/**"
-      instructions: |
-        - permissionsが最小権限になっているか確認してください。
-        - secretやcredentialがworkflowへ直接書かれている場合は指摘してください。
-        - CIの失敗が見える状態で、失敗を握り潰していないか確認してください。
-        - cache設定が正しいか確認してください。
-        - buildとtestが再現可能な構成になっているか確認してください。
-
-    - path: "**/*_test.go"
-      instructions: |
-        - 実装の内部構造ではなく、振る舞いを検証するtestになっているか確認してください。
-        - 同じ構造で複数の入出力を検証する場合は、必要に応じてtable-driven testを提案してください。
-        - 境界値、エラー経路、retry、並行処理を必要に応じて確認してください。
-        - flakyなtestや、制御できない外部サービスに依存するtestは指摘してください。
+        - migrationが再現可能で、破壊的変更やロールバック上の注意が明確か確認してください。
+        - RLSがユーザー単位の面談・字幕・イベント・要約データを適切に分離しているか確認してください。
+        - service role keyをクライアントへ公開していないか確認してください。
+        - 保存への同意、保持期間、面談単位の削除、個人情報の扱いを確認してください。
 
     - path: "docs/adr/**"
       instructions: |
         - アーキテクチャ判断にContext、Decision、Alternatives、Consequencesが含まれているか確認してください。
-        - AcceptedなADRと矛盾する実装変更に、新しい判断や置き換えの記録がない場合は指摘してください。
+        - AcceptedなADRとREADME・実装方針に矛盾がないか確認してください。
+        - 技術選定の理由が、恋面のMVP要件と検証可能なリスクに結びついているか確認してください。
 
     - path: "docs/**"
       instructions: |
-        - 技術的に正確で、現在の実装と矛盾していないか確認してください。
-        - 古くなったコマンド、アーキテクチャ説明、用語があれば指摘してください。
+        - 技術的に正確で、Electron + TypeScript、Node.js + TypeScript、Supabaseの現行方針と矛盾していないか確認してください。
+        - 古いGo前提のコマンド、ディレクトリ、アーキテクチャ説明が現行資料へ混在していないか確認してください。
+        - Zoom RTMSの利用条件、参加者への同意、ログ保存、画面共有時の表示範囲が明記されているか確認してください。
+        - 未検証の機能を実装済みと誤認させる表現がないか確認してください。
+
+    - path: ".github/workflows/**"
+      instructions: |
+        - permissionsが最小権限になっているか確認してください。
+        - secretやcredentialがworkflowへ直接書かれていないか確認してください。
+        - test、lint、buildの失敗を握り潰していないか確認してください。
+        - Node.js / TypeScript / Electronの依存関係とCIの実行手順が再現可能か確認してください。
 
 code_generation:
   unit_tests:
     path_instructions:
-      - path: "**/*.go"
+      - path: "**/*.test.ts"
         instructions: |
-          - Go標準のtestingの慣習を優先してください。
-          - 適している場合はtable-driven testを使ってください。
-          - 正常系、エラー経路、境界値、必要に応じて並行処理をカバーしてください。
-          - integration testとして明示されていない限り、実ネットワークへのアクセスは避けてください。
+          - TypeScript標準のテスト慣習を優先してください。
+          - 正常系、エラー経路、境界値、再接続、timeout、重複配送を必要に応じてカバーしてください。
+          - RTMS、Zoom、Supabase、LLMなどの外部サービスへ直接接続せず、決定的なモックを使ってください。
+          - fake字幕を使ったUI・サーバー間の検証を、実サービス依存のテストと分離してください。
           - testは決定的で読みやすく保ってください。
+
+      - path: "**/*.test.tsx"
+        instructions: |
+          - rendererの表示・操作・表示モード切替を振る舞いとして検証してください。
+          - 字幕の意味を変えずに表示演出だけが変わることを確認してください。
+          - 画面共有モード、クリック透過、非表示ショートカットの状態を必要に応じて検証してください。
+
+      - path: "**/*.spec.ts"
+        instructions: |
+          - integration testでは、境界間の契約、認証、再接続、エラー処理を確認してください。
+          - 実ネットワークや実際のZoom会議へ接続するテストは、明示されたE2E以外では避けてください。
+
+      - path: "**/*.spec.tsx"
+        instructions: |
+          - UIと通信契約の統合動作を確認し、外部サービスを決定的なテストダブルへ置き換えてください。

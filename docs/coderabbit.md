@@ -1,47 +1,55 @@
 # CodeRabbit 運用方針
 
-CodeRabbit は、このリポジトリでは設計・品質レビューを補助するために使います。
+CodeRabbitは、恋面の設計・実装・品質レビューを補助するために使います。最終判断やCIの代わりではありません。
 
 ## 役割
 
-CodeRabbit に期待すること:
+CodeRabbitに期待すること:
 
-- モジュール境界・依存方向の違反の指摘
-- ADR と実装の矛盾の指摘
-- テスト不足やエラー処理不足の指摘
-- 非同期処理の retry、冪等性、重複配送、timeout の観点チェック
-- Kubernetes、CI/CD、secret 周りのレビュー
-- 必要に応じた unit test の生成補助
+- Electronのmain / preload / renderer境界、IPC、BrowserWindow設定のレビュー
+- 透明オーバーレイ、クリック透過、共有モード、UI状態のレビュー
+- Node.js / TypeScriptの責務分離、RTMS接続、WebSocket、再接続、timeout、retryのレビュー
+- 元字幕と表示用字幕の分離、重複排除、順序、話者・時刻の扱いのレビュー
+- Supabase migration、RLS、同意、保持期間、面談単位の削除のレビュー
+- AI要約の構造化出力、失敗時の再実行、secretと個人情報の扱いのレビュー
+- TypeScriptのunit / integration testにおける境界値、エラー経路、外部サービス依存のレビュー
+- README・ADR・実装方針の矛盾、古いGo前提の記述の指摘
 
-CodeRabbit に任せないこと:
+CodeRabbitに任せないこと:
 
-- merge 可否の最終判断
-- テストの実行結果そのもの
-- lint や build の成否判定
-- アーキテクチャ判断の最終決定
+- merge可否の最終判断
+- test、lint、buildの実行結果そのもの
+- Zoom RTMSが実際の企業主催会議で利用できるかの実機確認
+- 画面共有時にオーバーレイが相手へ見えないことの保証
+- アーキテクチャ判断、プライバシー方針、参加者への同意判断の最終決定
 
-客観的な merge gate は GitHub Actions の test / lint / build などに置きます。
-CodeRabbit のコメントが残っていることだけを理由に merge を止める運用にはしません。
+客観的なmerge gateはGitHub Actionsのtest / lint / buildなどに置きます。CodeRabbitのコメントが残っていることだけを理由にmergeを止める運用にはしません。
 
-## PR で使うコマンド
+## PRで使うコマンド
 
-CodeRabbit が GitHub App としてこのリポジトリにインストールされていることが前提です。
+CodeRabbitがGitHub Appとしてこのリポジトリにインストールされていることが前提です。
 
-- @coderabbitai review
+- '@coderabbitai review'
   - 差分レビューを依頼する
-- @coderabbitai full review
-  - PR 全体のレビューを依頼する
-- @coderabbitai generate unit tests
-  - 変更内容をもとに unit test 生成を依頼する
+- '@coderabbitai full review'
+  - PR全体のレビューを依頼する
+- '@coderabbitai generate unit tests'
+  - 変更内容をもとにunit test生成を依頼する
 
 ## 設定
 
-リポジトリ直下の .coderabbit.yaml でレビュー観点を管理します。
+リポジトリ直下の .coderabbit.yaml で、現行のディレクトリ構成に合わせてレビュー観点を管理します。
 
-現時点では、Go、モジュール境界、Worker / Queue、Kubernetes、GitHub Actions、ADR、テストを重点的に見ます。
-ディレクトリ構成が固まったら path instruction は実際の構成に合わせて更新します。
+- apps/desktop/**: Electronのmain / preload / renderer、オーバーレイ、UIセキュリティ
+- apps/server/**: Zoom RTMS、字幕処理、WebSocket、AI処理、非同期処理
+- packages/contracts/**: ElectronとNode.js間の型・スキーマ・通信契約
+- supabase/**: migration、RLS、保存、削除、個人情報
+- docs/**: README・ADR・技術構成の整合性
+- .github/workflows/**: CIの権限、secret、再現性
+- **/*.test.ts / **/*.test.tsx / **/*.spec.ts / **/*.spec.tsx: TypeScriptのテスト方針
+
+旧Go構成の internal/**、cmd/**、*_test.go を中心にした設定は、Electron + Node.js構成への移行に合わせて廃止しました。今後Goのコードを再導入する場合は、別のADRとレビュー方針を追加します。
 
 ## 注意
 
-CodeRabbit のレビューを待つことで開発が止まる場合は、人間のレビューと GitHub Actions の結果を優先します。
-AI レビューは補助であり、チームの判断を置き換えるものではありません。
+CodeRabbitのレビューを待つことで開発が止まる場合は、人間のレビューとGitHub Actionsの結果を優先します。AIレビューは補助であり、チームの判断を置き換えません。
