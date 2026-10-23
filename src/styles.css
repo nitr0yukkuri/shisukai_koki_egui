@@ -1,0 +1,94 @@
+:root {
+  font-family: "Yu Gothic UI", "Meiryo", sans-serif;
+  color: #17233b;
+  background: #f4f6fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px;
+}
+
+.card {
+  width: min(100%, 680px);
+  padding: clamp(32px, 7vw, 64px);
+  border: 1px solid #e3e8f2;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(23 35 59 / 9%);
+}
+
+.eyebrow {
+  margin: 0 0 16px;
+  color: #4d61cb;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.5rem, 7vw, 4rem);
+  letter-spacing: 0.04em;
+}
+
+.intro {
+  margin: 20px 0 36px;
+  color: #59657b;
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+
+.runtime {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.runtime div {
+  padding: 16px;
+  border-radius: 14px;
+  background: #f4f6fb;
+}
+
+.runtime dt {
+  color: #68748a;
+  font-size: 0.78rem;
+}
+
+.runtime dd {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .page {
+    padding: 16px;
+  }
+
+  .runtime {
+    grid-template-columns: 1fr;
+  }
+}

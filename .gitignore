@@ -1,13 +1,14 @@
+# Node.js
+node_modules/
+dist/
+coverage/
+release/
+*.log
+
 # Environment / secrets
 .env
 .env.*
 !.env.example
-
-# Go
-bin/
-*.test
-coverage.out
-coverage.html
 
 # IDE / OS
 .vscode/
@@ -17,4 +18,3 @@ Thumbs.db
 
 # Local tooling
 tmp/
-dist/

@@ -107,19 +107,19 @@ AIの役割は面接官の代替や合否判定ではなく、本人の発話を
 
 ## Status
 
-現在は企画と技術検証を進めています。ここに記載した機能には、今後の検討段階のものが含まれます。音声認識の精度、言い淀みの検出方法、AIへ送る情報、ローカル保存とクラウド保存の選択は、Issue / ADRで合意してから実装します。
+Node.js開発環境として、ElectronのMain / Preload、React + TypeScriptのRendererを起動できる最小構成を用意しています。録音、文字起こし、SQLiteへのログ保存、AIによる振り返りなどのプロダクト機能は、まだ実装していません。
 
 ## Development commands
 
-よく使う開発コマンドは Makefile にまとめています。
+開発にはNode.js 24とnpmを使います。初回は依存関係をインストールし、以降はnpm scriptsから起動・検証できます。
 
-    make help
-    make setup
-    make run
-    make fmt
-    make test
-    make lint
-    make build
-    make check
+    npm ci
+    npm run dev
+    npm run start
+    npm test
+    npm run lint
+    npm run typecheck
+    npm run build
+    npm run check
 
-現時点ではElectron / Node.jsプロジェクトの初期化前です。上記のMakefileコマンドは旧Go基盤の仮置きであり、package.json、Electronのメインプロセス、レンダラープロセスの初期化時に更新します。
+npm run devはViteのRendererとElectronを同時に起動します。npm run startはRendererをビルドしてからデスクトップアプリを起動します。npm run buildはRendererのビルドまでを行い、Windowsインストーラーは作成しません。
