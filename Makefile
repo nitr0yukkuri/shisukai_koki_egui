@@ -1,39 +1,31 @@
-SHELL := /bin/bash
-
-GO_ENTRYPOINT ?= ./cmd/api
-
-.PHONY: help setup run fmt test lint build check require-go
+.PHONY: help setup run start dev test lint typecheck build check
 
 help:
-	@echo "利用できるコマンド:"
-	@echo "  make setup  - Go依存関係を取得"
-	@echo "  make run    - APIを起動"
-	@echo "  make fmt    - Goコードをgofmt"
-	@echo "  make test   - Goのテストを実行"
-	@echo "  make lint   - gofmtとgo vetを確認"
-	@echo "  make build  - Goコードをビルド"
-	@echo "  make check  - lint / test / buildをまとめて実行"
+	@echo "npm scripts: setup, dev, start, test, lint, typecheck, build, check"
 
 setup:
-	@if [[ -f go.mod ]]; then 		go mod download; 	else 		echo "go.modがまだありません。Goプロジェクト初期化後に実行してください。"; 	fi
+	npm ci
 
-run: require-go
-	@if [[ -d "$(GO_ENTRYPOINT)" || -f "$(GO_ENTRYPOINT)" ]]; then 		go run "$(GO_ENTRYPOINT)"; 	else 		echo "$(GO_ENTRYPOINT) がまだありません。Go API作成後に実行してください。"; 		exit 1; 	fi
+run:
+	npm run dev
 
-fmt: require-go
-	@gofmt -w $$(find . -type f -name '*.go' -not -path './vendor/*')
+start:
+	npm run start
 
-test: require-go
-	go test ./...
+dev:
+	npm run dev
 
-lint: require-go
-	@files="$$(find . -type f -name '*.go' -not -path './vendor/*' -print)"; 	if [[ -n "$$files" ]]; then 		unformatted="$$(gofmt -l $$files)"; 		if [[ -n "$$unformatted" ]]; then 			echo "次のファイルがgofmtされていません:"; 			echo "$$unformatted"; 			exit 1; 		fi; 	fi
-	go vet ./...
+test:
+	npm test
 
-build: require-go
-	go build ./...
+lint:
+	npm run lint
 
-check: lint test build
+typecheck:
+	npm run typecheck
 
-require-go:
-	@if [[ ! -f go.mod ]]; then 		echo "go.modがまだありません。先にGoプロジェクトを初期化してください。"; 		exit 1; 	fi
+build:
+	npm run build
+
+check:
+	npm run check
