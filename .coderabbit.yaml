@@ -6,7 +6,7 @@ reviews:
     drafts: false
 
   path_filters:
-    - "!**/README.md"
+    - "!**/README*.md"
 
   path_instructions:
     - path: "apps/desktop/**"
