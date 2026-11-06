@@ -208,7 +208,7 @@ function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: ReportTab; s
     <article className="report-card speech-card"><div className="speech-header"><h2>発話内容の振り返り</h2><div className="report-tabs" role="tablist" aria-label="振り返り表示">
       {([["points", "重要なポイント"], ["hints", "改善のヒント"], ["transcript", "全体の書き起こし"]] as [ReportTab, string][]).map(([value, label]) => <button className={tab === value ? "active" : ""} key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{label}</button>)}
     </div></div><div className="transcript-rows">{reportRows[tab].map((row) => <div className="transcript-row" key={row.time}><time>{row.time}</time><p>{row.text}</p></div>)}</div></article>
-    <p className="report-disclaimer">サンプル表示です。練習の合否、適性、人格を判定するものではありません。</p>
+    <p className="report-disclaimer">サンプル表示です。今回の回答は保存・評価されていません。練習の合否、適性、人格を判定するものではありません。</p>
   </section>;
 }
 
@@ -216,7 +216,10 @@ function SettingTitle({ icon, title, description }: { icon: string; title: strin
   return <div className="setting-title"><span className="setting-icon">{icon}</span><h2>{title}</h2><p>{description}</p></div>;
 }
 
-function SettingsPage({ accent, setAccent, notify }: { accent: string; setAccent: (color: string) => void; notify: (message: string) => void }) {
+function SettingsPage({ accent, setAccent, notifications, toggleNotification, notify }: {
+  accent: string; setAccent: (color: string) => void; notifications: boolean[];
+  toggleNotification: (index: number) => void; notify: (message: string) => void;
+}) {
   const colors = [
     { label: "フォレスト", value: "#1e7149", image: "setting-swatch-forest.svg" },
     { label: "スカイ", value: "#438ce6", image: "setting-swatch-sky.svg" },
@@ -224,7 +227,6 @@ function SettingsPage({ accent, setAccent, notify }: { accent: string; setAccent
     { label: "サン", value: "#dca623", image: "setting-swatch-sun.svg" },
     { label: "コーラル", value: "#df5c4c", image: "setting-swatch-coral.svg" },
   ];
-  const [notifications, setNotifications] = useState([true, true, false]);
   return <section className="settings-view"><header className="page-heading settings-heading"><h1>設定</h1><p>音声デバイスやカラー、アカウント情報を管理できます。</p></header>
     <div className="settings-grid">
       <article className="setting-card"><SettingTitle icon="音" title="スピーカー" description="音声の出力先を選択します" /><div className="setting-controls"><button type="button" className="device-select" onClick={() => notify("音声デバイスの選択機能は準備中です。")}>既定のスピーカー <span>⌄</span></button><button type="button" className="setting-button" onClick={() => notify("スピーカーのテスト機能は準備中です。")}>テスト再生</button></div></article>
@@ -232,7 +234,7 @@ function SettingsPage({ accent, setAccent, notify }: { accent: string; setAccent
       <article className="setting-card"><SettingTitle icon="色" title="カラー" description="画面のアクセントカラーを選びます" /><div className="color-picker">{colors.map((color) => <button className={"color-choice" + (accent === color.value ? " chosen" : "")} key={color.value} type="button" aria-label={color.label} aria-pressed={accent === color.value} onClick={() => setAccent(color.value)}><Image name={color.image} /></button>)}<strong>{colors.find((color) => color.value === accent)?.label ?? "フォレスト"}</strong></div></article>
       <article className="setting-card"><SettingTitle icon="ID" title="アカウント" description="ログイン情報を確認・変更できます" /><div className="account-panel"><span>登録情報・ログイン方法</span><button type="button" className="setting-button" onClick={() => notify("アカウント機能は準備中です。")}>アカウント管理</button></div></article>
       <article className="setting-card"><SettingTitle icon="人" title="プロフィール" description="表示名やプロフィール画像を編集できます" /><div className="profile-panel"><Image name="setting-profile.svg" /><span><strong>プロフィール情報</strong><small>名前・画像・自己紹介</small></span><button type="button" className="setting-button" onClick={() => notify("プロフィール編集機能は準備中です。")}>プロフィール編集</button></div></article>
-      <article className="setting-card notification-card"><SettingTitle icon="!" title="通知" description="受け取りたい通知を選択します" /><div className="notification-list">{["面接練習のリマインダー", "練習レポートのお知らせ", "サービスからのお知らせ"].map((label, index) => <label className="notification-row" key={label}><span>{label}</span><button className={"toggle-button" + (notifications[index] ? " on" : "")} type="button" role="switch" aria-checked={notifications[index]} aria-label={label} onClick={() => setNotifications((current) => current.map((value, item) => item === index ? !value : value))}><span /></button></label>)}</div></article>
+      <article className="setting-card notification-card"><SettingTitle icon="!" title="通知" description="受け取りたい通知を選択します" /><div className="notification-list">{["面接練習のリマインダー", "練習レポートのお知らせ", "サービスからのお知らせ"].map((label, index) => <label className="notification-row" key={label}><span>{label}</span><button className={"toggle-button" + (notifications[index] ? " on" : "")} type="button" role="switch" aria-checked={notifications[index]} aria-label={label} onClick={() => toggleNotification(index)}><span /></button></label>)}</div></article>
     </div>
   </section>;
 }
@@ -251,13 +253,15 @@ function App() {
   const [notice, setNotice] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [question, setQuestion] = useState(0);
-  const [answer, setAnswer] = useState(sampleAnswer);
+  const [answers, setAnswers] = useState<Record<Mode, string>>({ solo: sampleAnswer, partner: sampleAnswer });
   const [filter, setFilter] = useState<Filter>("all");
   const [newest, setNewest] = useState(true);
   const [selected, setSelected] = useState(logs[0]);
   const [tab, setTab] = useState<ReportTab>("points");
   const [accent, setAccent] = useState("#1e7149");
+  const [notifications, setNotifications] = useState([true, true, false]);
   const notify = (message: string) => setNotice(message);
+  const toggleNotification = (index: number) => setNotifications((current) => current.map((value, item) => item === index ? !value : value));
   const goTo = (next: Screen) => {
     setNavigation((current) => {
       const entries = current.entries.slice(0, current.position + 1);
@@ -269,7 +273,7 @@ function App() {
   };
   const navigate = (next: NavScreen) => {
     goTo(next); setNotice("");
-    if (next === "solo" || next === "partner") { setQuestion(0); setAnswer(sampleAnswer); }
+    if (next === "solo" || next === "partner") setQuestion(0);
   };
   const moveNavigation = (offset: -1 | 1) => {
     setNotice("");
@@ -283,16 +287,30 @@ function App() {
     home: "一人でできる、面接練習", solo: "一人でできる、面接練習", partner: "誰かと話す、面接練習",
     history: "一人でできる、振り返り・評価", report: "一人でできる、振り返り・評価", settings: "アカウント・環境設定",
   };
-  const finish = () => { setSelected(logs[0]); setTab("points"); goTo("report"); };
+  const finish = () => {
+    const mode = screen === "partner" ? "partner" : "solo";
+    setSelected({
+      ...logs[0],
+      id: 0,
+      date: "今回の練習（サンプル）",
+      mode,
+      partner: mode === "solo" ? "一人練習" : "サンプル相手",
+      initial: mode === "solo" ? "AI" : "練",
+      question: questions[question],
+      answer: answers[mode],
+    });
+    setTab("points");
+    goTo("report");
+  };
   const openReport = (entry: LogEntry) => { setSelected(entry); setTab("points"); goTo("report"); };
   return <div className="app-frame" style={{ "--accent": accent } as CSSProperties & { "--accent": string }}>
     <Sidebar screen={screen} onNavigate={navigate} /><div className="app-main"><TopBar title={titles[screen]} canGoBack={navigation.position > 0} canGoForward={navigation.position < navigation.entries.length - 1} goBack={() => moveNavigation(-1)} goForward={() => moveNavigation(1)} />
       <main className={"app-content screen-" + screen}>
         {screen === "home" && <HomePage go={navigate} notify={notify} />}
-        {(screen === "solo" || screen === "partner") && <PracticePage mode={screen} question={question} setQuestion={setQuestion} answer={answer} setAnswer={setAnswer} finish={finish} hint={() => setShowHint(true)} notify={notify} />}
+        {(screen === "solo" || screen === "partner") && <PracticePage mode={screen} question={question} setQuestion={setQuestion} answer={answers[screen]} setAnswer={(value) => setAnswers((current) => ({ ...current, [screen]: value }))} finish={finish} hint={() => setShowHint(true)} notify={notify} />}
         {screen === "history" && <HistoryPage filter={filter} setFilter={setFilter} newest={newest} setNewest={setNewest} open={openReport} />}
         {screen === "report" && <ReportPage entry={selected} tab={tab} setTab={setTab} />}
-        {screen === "settings" && <SettingsPage accent={accent} setAccent={setAccent} notify={notify} />}
+        {screen === "settings" && <SettingsPage accent={accent} setAccent={setAccent} notifications={notifications} toggleNotification={toggleNotification} notify={notify} />}
       </main>
     </div>
     {notice && <div className="status-toast" role="status"><span>{notice}</span><button type="button" aria-label="閉じる" onClick={() => setNotice("")}>×</button></div>}
