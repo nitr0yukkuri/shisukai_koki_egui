@@ -233,7 +233,7 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid #79c79a; outli
 .transcript-rows { display: grid; gap: 8px; margin-top: 16px; }
 .transcript-row { display: grid; grid-template-columns: 50px 1fr; align-items: center; min-height: 54px; padding: 6px 11px; border: 1px solid var(--border); border-radius: 8px; background: white; }
 .transcript-row:first-child { border-color: transparent; background: #f6faf6; }
-.transcript-row time { color: #607668; font-size: 9px; }
+.transcript-row time, .transcript-row > span { color: #607668; font-size: 9px; }
 .transcript-row p { margin: 0; color: #18392c; font-size: 10px; line-height: 1.5; }
 .report-disclaimer { position: absolute; right: 28px; bottom: 6px; margin: 0; color: #87959d; font-size: 9px; }
 
