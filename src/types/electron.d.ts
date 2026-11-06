@@ -5,5 +5,10 @@ interface Window {
       node: string;
       platform: string;
     };
+    window: {
+      minimize: () => Promise<void>;
+      toggleMaximize: () => Promise<void>;
+      close: () => Promise<void>;
+    };
   };
 }
