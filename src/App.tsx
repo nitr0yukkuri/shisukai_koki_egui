@@ -169,7 +169,7 @@ function HistoryPage({ filter, setFilter, newest, setNewest, open }: {
   </section>;
 }
 
-const reportRows: Record<ReportTab, { time: string; text: string }[]> = {
+const reportRows: Record<Exclude<ReportTab, "transcript">, { time: string; text: string }[]> = {
   points: [
     { time: "00:12", text: "私は、大学時代に長期インターンシップでWebサービスの企画に携わった経験から、ユーザーの課題を解決する仕事に強く興味を持ちました。" },
     { time: "00:28", text: "ユーザーインタビューを通じて改善を繰り返し、使いやすさが向上していく過程にやりがいを感じています。" },
@@ -180,14 +180,12 @@ const reportRows: Record<ReportTab, { time: string; text: string }[]> = {
     { time: "00:28", text: "取り組みの中で、自分が工夫した点を一つ具体的に挙げてみましょう。" },
     { time: "00:47", text: "経験と次に挑戦したいことを、ひと続きの説明にしてみましょう。" },
   ],
-  transcript: [
-    { time: "00:12", text: "大学時代に長期インターンシップでWebサービスの企画に携わりました。" },
-    { time: "00:28", text: "ユーザーインタビューを通じて課題を整理し、改善を繰り返しました。" },
-    { time: "00:47", text: "使いやすさが向上した経験を、これからの仕事にも活かしたいです。" },
-  ],
 };
 
 function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: ReportTab; setTab: (value: ReportTab) => void }) {
+  const rows = tab === "transcript"
+    ? [{ time: "", text: entry.answer || "回答内容はありません。" }]
+    : reportRows[tab];
   return <section className="report-view">
     <header className="page-heading report-heading"><div><h1>振り返りレポート</h1><p>練習ログを見返して、次の面接に活かしましょう。</p></div>
       <div className="report-date"><span>{entry.date}</span><span>{entry.mode === "solo" ? "一人で練習" : "練習相手：" + entry.partner}</span></div></header>
@@ -207,7 +205,7 @@ function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: ReportTab; s
     </div>
     <article className="report-card speech-card"><div className="speech-header"><h2>発話内容の振り返り</h2><div className="report-tabs" role="tablist" aria-label="振り返り表示">
       {([["points", "重要なポイント"], ["hints", "改善のヒント"], ["transcript", "全体の書き起こし"]] as [ReportTab, string][]).map(([value, label]) => <button className={tab === value ? "active" : ""} key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{label}</button>)}
-    </div></div><div className="transcript-rows">{reportRows[tab].map((row) => <div className="transcript-row" key={row.time}><time>{row.time}</time><p>{row.text}</p></div>)}</div></article>
+    </div></div><div className="transcript-rows">{rows.map((row) => <div className="transcript-row" key={row.time || "answer"}>{row.time && <time>{row.time}</time>}<p>{row.text}</p></div>)}</div></article>
     <p className="report-disclaimer">サンプル表示です。今回の回答は保存・評価されていません。練習の合否、適性、人格を判定するものではありません。</p>
   </section>;
 }
