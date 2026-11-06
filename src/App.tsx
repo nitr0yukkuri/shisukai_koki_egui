@@ -184,7 +184,7 @@ const reportRows: Record<Exclude<ReportTab, "transcript">, { time: string; text:
 
 function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: ReportTab; setTab: (value: ReportTab) => void }) {
   const rows = tab === "transcript"
-    ? [{ time: "", text: entry.answer || "回答内容はありません。" }]
+    ? [{ time: "回答", text: entry.answer || "回答内容はありません。" }]
     : reportRows[tab];
   return <section className="report-view">
     <header className="page-heading report-heading"><div><h1>振り返りレポート</h1><p>練習ログを見返して、次の面接に活かしましょう。</p></div>
@@ -205,7 +205,7 @@ function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: ReportTab; s
     </div>
     <article className="report-card speech-card"><div className="speech-header"><h2>発話内容の振り返り</h2><div className="report-tabs" role="tablist" aria-label="振り返り表示">
       {([["points", "重要なポイント"], ["hints", "改善のヒント"], ["transcript", "全体の書き起こし"]] as [ReportTab, string][]).map(([value, label]) => <button className={tab === value ? "active" : ""} key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{label}</button>)}
-    </div></div><div className="transcript-rows">{rows.map((row) => <div className="transcript-row" key={row.time || "answer"}>{row.time && <time>{row.time}</time>}<p>{row.text}</p></div>)}</div></article>
+    </div></div><div className="transcript-rows">{rows.map((row) => <div className="transcript-row" key={row.time || "answer"}>{row.time && (tab === "transcript" ? <span>{row.time}</span> : <time>{row.time}</time>)}<p>{row.text}</p></div>)}</div></article>
     <p className="report-disclaimer">サンプル表示です。今回の回答は保存・評価されていません。練習の合否、適性、人格を判定するものではありません。</p>
   </section>;
 }
