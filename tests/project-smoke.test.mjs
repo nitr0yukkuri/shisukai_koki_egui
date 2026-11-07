@@ -33,6 +33,8 @@ test("preload exposes only runtime status and window controls", () => {
 test("Electron blocks renderer navigation outside the app document", () => {
   assert.match(mainProcess, /setWindowOpenHandler\(\(\) => \(\{ action: "deny" \}\)\)/);
   assert.match(mainProcess, /webContents\.on\("will-navigate"/);
+  assert.match(mainProcess, /new URL\(event\.url\)/);
+  assert.doesNotMatch(mainProcess, /navigationUrl/);
   assert.match(mainProcess, /event\.senderFrame !== mainWindow\.webContents\.mainFrame/);
 });
 

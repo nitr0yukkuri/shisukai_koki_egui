@@ -189,6 +189,11 @@ const reportRows: Record<Exclude<ReportTab, "transcript">, { time: string; text:
     { time: "00:47", text: "経験と次に挑戦したいことを、ひと続きの説明にしてみましょう。" },
   ],
 };
+const reportTabs: [ReportTab, string][] = [
+  ["points", "重要なポイント"],
+  ["hints", "改善のヒント"],
+  ["transcript", "全体の書き起こし"],
+];
 
 function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: ReportTab; setTab: (value: ReportTab) => void }) {
   const rows = tab === "transcript"
@@ -212,8 +217,8 @@ function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: ReportTab; s
       <article className="report-card feedback-card"><h2>振り返りポイント</h2><div className="good-points"><strong>✓ 良かった点</strong><p>経験を交えて説明できていました。自分の言葉で伝えられています。</p></div><div className="next-points"><strong>次回の確認ポイント</strong><p>成果や数字を具体的に伝える / 経験と次の挑戦をつなげる</p></div></article>
     </div>
     <article className="report-card speech-card"><div className="speech-header"><h2>発話内容の振り返り</h2><div className="report-tabs" role="tablist" aria-label="振り返り表示">
-      {([["points", "重要なポイント"], ["hints", "改善のヒント"], ["transcript", "全体の書き起こし"]] as [ReportTab, string][]).map(([value, label]) => <button className={tab === value ? "active" : ""} key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{label}</button>)}
-    </div></div><div className="transcript-rows">{rows.map((row) => <div className={"transcript-row" + (tab === "transcript" ? " transcript-full" : "")} key={row.time || "answer"}>{row.time && (tab === "transcript" ? <span>{row.time}</span> : <time>{row.time}</time>)}<p>{row.text}</p></div>)}</div></article>
+      {reportTabs.map(([value, label], index) => <button id={"report-tab-" + value} aria-controls="report-tabpanel" tabIndex={tab === value ? 0 : -1} className={tab === value ? "active" : ""} key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)} onKeyDown={(event) => { const key = event.key; if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "Home" && key !== "End") return; event.preventDefault(); const nextIndex = key === "Home" ? 0 : key === "End" ? reportTabs.length - 1 : (index + (key === "ArrowRight" ? 1 : -1) + reportTabs.length) % reportTabs.length; const nextTab = reportTabs[nextIndex][0]; setTab(nextTab); document.getElementById("report-tab-" + nextTab)?.focus(); }}>{label}</button>)}
+    </div></div><div className="transcript-rows" id="report-tabpanel" role="tabpanel" aria-labelledby={"report-tab-" + tab} tabIndex={0}>{rows.map((row) => <div className={"transcript-row" + (tab === "transcript" ? " transcript-full" : "")} key={row.time || "answer"}>{row.time && (tab === "transcript" ? <span>{row.time}</span> : <time>{row.time}</time>)}<p>{row.text}</p></div>)}</div></article>
     <p className="report-disclaimer">サンプル表示です。今回の回答は保存・評価されていません。練習の合否、適性、人格を判定するものではありません。</p>
   </section>;
 }
@@ -275,16 +280,16 @@ function HintDialog({ close }: { close: () => void }) {
     if (!first || !last) {
       event.preventDefault();
       event.currentTarget.focus();
-    } else if (event.shiftKey && (active === first || !event.currentTarget.contains(active))) {
+    } else if (event.shiftKey && (active === first || active === event.currentTarget || !event.currentTarget.contains(active))) {
       event.preventDefault();
       last.focus();
-    } else if (!event.shiftKey && (active === last || !event.currentTarget.contains(active))) {
+    } else if (!event.shiftKey && (active === last || active === event.currentTarget || !event.currentTarget.contains(active))) {
       event.preventDefault();
       first.focus();
     }
   };
 
-  return <div ref={backdropRef} className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><section className="hint-dialog" role="dialog" aria-modal="true" aria-labelledby="hint-title" onKeyDown={handleKeyDown} onMouseDown={(event) => event.stopPropagation()}>
+  return <div ref={backdropRef} className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><section className="hint-dialog" role="dialog" aria-modal="true" aria-labelledby="hint-title" tabIndex={-1} onKeyDown={handleKeyDown} onMouseDown={(event) => { event.stopPropagation(); if (!(event.target instanceof Element && event.target.closest("button, a[href], input, select, textarea"))) event.currentTarget.focus(); }}>
     <button ref={closeButtonRef} className="dialog-close" type="button" onClick={close} aria-label="閉じる">×</button><span className="dialog-kicker">話を組み立てるヒント</span><h2 id="hint-title">経験を、自分の言葉で整理する</h2><p>答えを決める必要はありません。話しやすい順番を見つけるための目安です。</p>
     <ol><li><strong>結論</strong> まず一番伝えたいことを短く話す</li><li><strong>理由</strong> そう考えるようになった背景を添える</li><li><strong>具体例</strong> 自分がしたことや気づきを一つ紹介する</li><li><strong>まとめ</strong> 経験を次にどう活かしたいかにつなげる</li></ol>
     <button className="button button-primary dialog-done" type="button" onClick={close}>練習に戻る</button>

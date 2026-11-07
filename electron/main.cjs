@@ -36,9 +36,9 @@ function createWindow() {
   });
 
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  mainWindow.webContents.on("will-navigate", (event, navigationUrl) => {
+  mainWindow.webContents.on("will-navigate", (event) => {
     try {
-      const destination = new URL(navigationUrl);
+      const destination = new URL(event.url);
       if (trustedDevUrl) {
         if (destination.origin === trustedDevUrl.origin && destination.pathname === trustedDevUrl.pathname) return;
       } else {
