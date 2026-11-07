@@ -20,8 +20,14 @@ test("development CSP permits the React Refresh preamble", async () => {
       developmentHtml,
       /script-src 'self' http:\/\/127\.0\.0\.1:5173 'unsafe-inline';/,
     );
+    assert.match(
+      developmentHtml,
+      /connect-src 'self' http:\/\/127\.0\.0\.1:5173 ws:\/\/127\.0\.0\.1:5173;/,
+    );
     assert.match(developmentHtml, /injectIntoGlobalHook\(window\)/);
-    assert.doesNotMatch(sourceHtml, /script-src[^;]*'unsafe-inline'/);
+    assert.match(sourceHtml, /script-src 'self';/);
+    assert.match(sourceHtml, /connect-src 'self';/);
+    assert.doesNotMatch(sourceHtml, /127\.0\.0\.1:5173|script-src[^;]*'unsafe-inline'/);
   } finally {
     await server.close();
   }

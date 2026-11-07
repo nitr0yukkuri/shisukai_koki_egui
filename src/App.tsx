@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from "react";
 
 type Screen = "home" | "solo" | "partner" | "history" | "report" | "settings";
 type NavScreen = Exclude<Screen, "report">;
@@ -10,10 +10,18 @@ type LogEntry = {
   id: number; date: string; mode: Mode; partner: string; initial: string;
   question: string; answer: string; score: number;
 };
+type NavigationEntry = { screen: Screen; report?: { entry: LogEntry; tab: ReportTab } };
 
 const img = (name: string) => "./figma/" + name;
 const questions = ["学生時代に力を入れたことは？", "あなたの強みを教えてください。", "志望動機を教えてください。"];
 const sampleAnswer = "大学時代の長期インターンでユーザーインタビューを行い、課題を見つけて改善しました。\n使いやすさが向上し、ユーザーに喜んでもらえたことに大きなやりがいを感じました。";
+const accentColors = [
+  { label: "フォレスト", value: "#1e7149", text: "#1e7149", on: "#ffffff", image: "setting-swatch-forest.svg" },
+  { label: "スカイ", value: "#438ce6", text: "#245c9e", on: "#111111", image: "setting-swatch-sky.svg" },
+  { label: "ラベンダー", value: "#8062cf", text: "#6547a8", on: "#ffffff", image: "setting-swatch-lavender.svg" },
+  { label: "サン", value: "#dca623", text: "#805a00", on: "#111111", image: "setting-swatch-sun.svg" },
+  { label: "コーラル", value: "#df5c4c", text: "#a42f22", on: "#111111", image: "setting-swatch-coral.svg" },
+] as const;
 const logs: LogEntry[] = [
   { id: 1, date: "2024年3月15日（金） 14:32", mode: "partner", partner: "佐藤 花子さん", initial: "佐", question: "志望動機を教えてください。", answer: "大学時代に長期インターンでWebサービスの企画に携わり、ユーザーの課題を解決する仕事に興味を持ちました。", score: 78 },
   { id: 2, date: "2024年3月12日（火） 19:08", mode: "solo", partner: "一人練習", initial: "AI", question: "自己PRをお願いします。", answer: "強みは周囲を巻き込み、最後までやり切る力です。文化祭の企画では役割を整理し、進行を支えました。", score: 85 },
@@ -205,7 +213,7 @@ function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: ReportTab; s
     </div>
     <article className="report-card speech-card"><div className="speech-header"><h2>発話内容の振り返り</h2><div className="report-tabs" role="tablist" aria-label="振り返り表示">
       {([["points", "重要なポイント"], ["hints", "改善のヒント"], ["transcript", "全体の書き起こし"]] as [ReportTab, string][]).map(([value, label]) => <button className={tab === value ? "active" : ""} key={value} type="button" role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{label}</button>)}
-    </div></div><div className="transcript-rows">{rows.map((row) => <div className="transcript-row" key={row.time || "answer"}>{row.time && (tab === "transcript" ? <span>{row.time}</span> : <time>{row.time}</time>)}<p>{row.text}</p></div>)}</div></article>
+    </div></div><div className="transcript-rows">{rows.map((row) => <div className={"transcript-row" + (tab === "transcript" ? " transcript-full" : "")} key={row.time || "answer"}>{row.time && (tab === "transcript" ? <span>{row.time}</span> : <time>{row.time}</time>)}<p>{row.text}</p></div>)}</div></article>
     <p className="report-disclaimer">サンプル表示です。今回の回答は保存・評価されていません。練習の合否、適性、人格を判定するものではありません。</p>
   </section>;
 }
@@ -218,18 +226,11 @@ function SettingsPage({ accent, setAccent, notifications, toggleNotification, no
   accent: string; setAccent: (color: string) => void; notifications: boolean[];
   toggleNotification: (index: number) => void; notify: (message: string) => void;
 }) {
-  const colors = [
-    { label: "フォレスト", value: "#1e7149", image: "setting-swatch-forest.svg" },
-    { label: "スカイ", value: "#438ce6", image: "setting-swatch-sky.svg" },
-    { label: "ラベンダー", value: "#8062cf", image: "setting-swatch-lavender.svg" },
-    { label: "サン", value: "#dca623", image: "setting-swatch-sun.svg" },
-    { label: "コーラル", value: "#df5c4c", image: "setting-swatch-coral.svg" },
-  ];
   return <section className="settings-view"><header className="page-heading settings-heading"><h1>設定</h1><p>音声デバイスやカラー、アカウント情報を管理できます。</p></header>
     <div className="settings-grid">
       <article className="setting-card"><SettingTitle icon="音" title="スピーカー" description="音声の出力先を選択します" /><div className="setting-controls"><button type="button" className="device-select" onClick={() => notify("音声デバイスの選択機能は準備中です。")}>既定のスピーカー <span>⌄</span></button><button type="button" className="setting-button" onClick={() => notify("スピーカーのテスト機能は準備中です。")}>テスト再生</button></div></article>
       <article className="setting-card"><SettingTitle icon="声" title="マイク" description="音声入力に使うデバイスを選択します" /><div className="setting-controls"><button type="button" className="device-select" onClick={() => notify("音声デバイスの選択機能は準備中です。")}>既定のマイク <span>⌄</span></button><button type="button" className="setting-button" onClick={() => notify("マイクのテスト機能は準備中です。")}>入力をテスト</button></div></article>
-      <article className="setting-card"><SettingTitle icon="色" title="カラー" description="画面のアクセントカラーを選びます" /><div className="color-picker">{colors.map((color) => <button className={"color-choice" + (accent === color.value ? " chosen" : "")} key={color.value} type="button" aria-label={color.label} aria-pressed={accent === color.value} onClick={() => setAccent(color.value)}><Image name={color.image} /></button>)}<strong>{colors.find((color) => color.value === accent)?.label ?? "フォレスト"}</strong></div></article>
+      <article className="setting-card"><SettingTitle icon="色" title="カラー" description="画面のアクセントカラーを選びます" /><div className="color-picker">{accentColors.map((color) => <button className={"color-choice" + (accent === color.value ? " chosen" : "")} key={color.value} type="button" aria-label={color.label} aria-pressed={accent === color.value} onClick={() => setAccent(color.value)}><Image name={color.image} /></button>)}<strong>{accentColors.find((color) => color.value === accent)?.label ?? "フォレスト"}</strong></div></article>
       <article className="setting-card"><SettingTitle icon="ID" title="アカウント" description="ログイン情報を確認・変更できます" /><div className="account-panel"><span>登録情報・ログイン方法</span><button type="button" className="setting-button" onClick={() => notify("アカウント機能は準備中です。")}>アカウント管理</button></div></article>
       <article className="setting-card"><SettingTitle icon="人" title="プロフィール" description="表示名やプロフィール画像を編集できます" /><div className="profile-panel"><Image name="setting-profile.svg" /><span><strong>プロフィール情報</strong><small>名前・画像・自己紹介</small></span><button type="button" className="setting-button" onClick={() => notify("プロフィール編集機能は準備中です。")}>プロフィール編集</button></div></article>
       <article className="setting-card notification-card"><SettingTitle icon="!" title="通知" description="受け取りたい通知を選択します" /><div className="notification-list">{["面接練習のリマインダー", "練習レポートのお知らせ", "サービスからのお知らせ"].map((label, index) => <label className="notification-row" key={label}><span>{label}</span><button className={"toggle-button" + (notifications[index] ? " on" : "")} type="button" role="switch" aria-checked={notifications[index]} aria-label={label} onClick={() => toggleNotification(index)}><span /></button></label>)}</div></article>
@@ -238,33 +239,87 @@ function SettingsPage({ accent, setAccent, notifications, toggleNotification, no
 }
 
 function HintDialog({ close }: { close: () => void }) {
-  return <div className="dialog-backdrop" role="presentation" onMouseDown={close}><section className="hint-dialog" role="dialog" aria-modal="true" aria-labelledby="hint-title" onMouseDown={(event) => event.stopPropagation()}>
-    <button className="dialog-close" type="button" onClick={close} aria-label="閉じる">×</button><span className="dialog-kicker">話を組み立てるヒント</span><h2 id="hint-title">経験を、自分の言葉で整理する</h2><p>答えを決める必要はありません。話しやすい順番を見つけるための目安です。</p>
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const backdrop = backdropRef.current;
+    const background = Array.from(backdrop?.parentElement?.children ?? [])
+      .filter((element): element is HTMLElement => element instanceof HTMLElement && element !== backdrop);
+    const previousInert = background.map((element) => element.inert);
+
+    background.forEach((element) => { element.inert = true; });
+    closeButtonRef.current?.focus();
+
+    return () => {
+      background.forEach((element, index) => { element.inert = previousInert[index]; });
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, []);
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      close();
+      return;
+    }
+    if (event.key !== "Tab") return;
+
+    const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ));
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (!first || !last) {
+      event.preventDefault();
+      event.currentTarget.focus();
+    } else if (event.shiftKey && (active === first || !event.currentTarget.contains(active))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (active === last || !event.currentTarget.contains(active))) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  return <div ref={backdropRef} className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><section className="hint-dialog" role="dialog" aria-modal="true" aria-labelledby="hint-title" onKeyDown={handleKeyDown} onMouseDown={(event) => event.stopPropagation()}>
+    <button ref={closeButtonRef} className="dialog-close" type="button" onClick={close} aria-label="閉じる">×</button><span className="dialog-kicker">話を組み立てるヒント</span><h2 id="hint-title">経験を、自分の言葉で整理する</h2><p>答えを決める必要はありません。話しやすい順番を見つけるための目安です。</p>
     <ol><li><strong>結論</strong> まず一番伝えたいことを短く話す</li><li><strong>理由</strong> そう考えるようになった背景を添える</li><li><strong>具体例</strong> 自分がしたことや気づきを一つ紹介する</li><li><strong>まとめ</strong> 経験を次にどう活かしたいかにつなげる</li></ol>
     <button className="button button-primary dialog-done" type="button" onClick={close}>練習に戻る</button>
   </section></div>;
 }
 
 function App() {
-  const [navigation, setNavigation] = useState<{ entries: Screen[]; position: number }>({ entries: ["home"], position: 0 });
-  const screen = navigation.entries[navigation.position];
+  const [navigation, setNavigation] = useState<{ entries: NavigationEntry[]; position: number }>({ entries: [{ screen: "home" }], position: 0 });
+  const currentRoute = navigation.entries[navigation.position];
+  const screen = currentRoute.screen;
   const [notice, setNotice] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [question, setQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<Mode, string>>({ solo: sampleAnswer, partner: sampleAnswer });
+  const [answers, setAnswers] = useState<Record<Mode, Record<number, string>>>({ solo: { 0: sampleAnswer }, partner: { 0: sampleAnswer } });
   const [filter, setFilter] = useState<Filter>("all");
   const [newest, setNewest] = useState(true);
-  const [selected, setSelected] = useState(logs[0]);
-  const [tab, setTab] = useState<ReportTab>("points");
   const [accent, setAccent] = useState("#1e7149");
   const [notifications, setNotifications] = useState([true, true, false]);
+  const selectedAccent = accentColors.find((color) => color.value === accent) ?? accentColors[0];
+  const accentProperties = {
+    "--accent": accent,
+    "--accent-text": selectedAccent.text,
+    "--accent-on": selectedAccent.on,
+  } as CSSProperties & Record<"--accent" | "--accent-text" | "--accent-on", string>;
   const notify = (message: string) => setNotice(message);
   const toggleNotification = (index: number) => setNotifications((current) => current.map((value, item) => item === index ? !value : value));
-  const goTo = (next: Screen) => {
+  const goTo = (next: Screen, reportEntry?: LogEntry) => {
     setNavigation((current) => {
       const entries = current.entries.slice(0, current.position + 1);
-      if (entries[entries.length - 1] === next) return current;
-      entries.push(next);
+      const previousEntry = entries[entries.length - 1];
+      if (next !== "report" && previousEntry?.screen === next) return current;
+      if (next === "report" && !reportEntry) return current;
+      entries.push(next === "report"
+        ? { screen: next, report: { entry: reportEntry!, tab: "points" } }
+        : { screen: next });
       return { entries, position: entries.length - 1 };
     });
     setNotice("");
@@ -281,13 +336,22 @@ function App() {
       return { ...current, position };
     });
   };
+  const setReportTab = (value: ReportTab) => {
+    setNavigation((current) => {
+      const entries = current.entries.slice();
+      const route = entries[current.position];
+      if (route.screen !== "report" || !route.report) return current;
+      entries[current.position] = { ...route, report: { ...route.report, tab: value } };
+      return { ...current, entries };
+    });
+  };
   const titles: Record<Screen, string> = {
     home: "一人でできる、面接練習", solo: "一人でできる、面接練習", partner: "誰かと話す、面接練習",
     history: "一人でできる、振り返り・評価", report: "一人でできる、振り返り・評価", settings: "アカウント・環境設定",
   };
   const finish = () => {
     const mode = screen === "partner" ? "partner" : "solo";
-    setSelected({
+    const entry: LogEntry = {
       ...logs[0],
       id: 0,
       date: "今回の練習（サンプル）",
@@ -295,19 +359,18 @@ function App() {
       partner: mode === "solo" ? "一人練習" : "サンプル相手",
       initial: mode === "solo" ? "AI" : "練",
       question: questions[question],
-      answer: answers[mode],
-    });
-    setTab("points");
-    goTo("report");
+      answer: answers[mode][question] ?? "",
+    };
+    goTo("report", entry);
   };
-  const openReport = (entry: LogEntry) => { setSelected(entry); setTab("points"); goTo("report"); };
-  return <div className="app-frame" style={{ "--accent": accent } as CSSProperties & { "--accent": string }}>
+  const openReport = (entry: LogEntry) => goTo("report", entry);
+  return <div className="app-frame" style={accentProperties}>
     <Sidebar screen={screen} onNavigate={navigate} /><div className="app-main"><TopBar title={titles[screen]} canGoBack={navigation.position > 0} canGoForward={navigation.position < navigation.entries.length - 1} goBack={() => moveNavigation(-1)} goForward={() => moveNavigation(1)} />
       <main className={"app-content screen-" + screen}>
         {screen === "home" && <HomePage go={navigate} notify={notify} />}
-        {(screen === "solo" || screen === "partner") && <PracticePage mode={screen} question={question} setQuestion={setQuestion} answer={answers[screen]} setAnswer={(value) => setAnswers((current) => ({ ...current, [screen]: value }))} finish={finish} hint={() => setShowHint(true)} notify={notify} />}
+        {(screen === "solo" || screen === "partner") && <PracticePage mode={screen} question={question} setQuestion={setQuestion} answer={answers[screen][question] ?? ""} setAnswer={(value) => setAnswers((current) => ({ ...current, [screen]: { ...current[screen], [question]: value } }))} finish={finish} hint={() => setShowHint(true)} notify={notify} />}
         {screen === "history" && <HistoryPage filter={filter} setFilter={setFilter} newest={newest} setNewest={setNewest} open={openReport} />}
-        {screen === "report" && <ReportPage entry={selected} tab={tab} setTab={setTab} />}
+        {screen === "report" && <ReportPage entry={currentRoute.report?.entry ?? logs[0]} tab={currentRoute.report?.tab ?? "points"} setTab={setReportTab} />}
         {screen === "settings" && <SettingsPage accent={accent} setAccent={setAccent} notifications={notifications} toggleNotification={toggleNotification} notify={notify} />}
       </main>
     </div>
