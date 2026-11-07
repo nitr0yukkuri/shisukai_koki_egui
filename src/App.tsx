@@ -16,11 +16,11 @@ const img = (name: string) => "./figma/" + name;
 const questions = ["学生時代に力を入れたことは？", "あなたの強みを教えてください。", "志望動機を教えてください。"];
 const sampleAnswer = "大学時代の長期インターンでユーザーインタビューを行い、課題を見つけて改善しました。\n使いやすさが向上し、ユーザーに喜んでもらえたことに大きなやりがいを感じました。";
 const accentColors = [
-  { label: "フォレスト", value: "#1e7149", text: "#1e7149", on: "#ffffff", image: "setting-swatch-forest.svg" },
-  { label: "スカイ", value: "#438ce6", text: "#245c9e", on: "#111111", image: "setting-swatch-sky.svg" },
-  { label: "ラベンダー", value: "#8062cf", text: "#6547a8", on: "#ffffff", image: "setting-swatch-lavender.svg" },
-  { label: "サン", value: "#dca623", text: "#805a00", on: "#111111", image: "setting-swatch-sun.svg" },
-  { label: "コーラル", value: "#df5c4c", text: "#a42f22", on: "#111111", image: "setting-swatch-coral.svg" },
+  { label: "フォレスト", value: "#1e7149", image: "setting-swatch-forest.svg" },
+  { label: "スカイ", value: "#438ce6", image: "setting-swatch-sky.svg" },
+  { label: "ラベンダー", value: "#8062cf", image: "setting-swatch-lavender.svg" },
+  { label: "サン", value: "#dca623", image: "setting-swatch-sun.svg" },
+  { label: "コーラル", value: "#df5c4c", image: "setting-swatch-coral.svg" },
 ] as const;
 const logs: LogEntry[] = [
   { id: 1, date: "2024年3月15日（金） 14:32", mode: "partner", partner: "佐藤 花子さん", initial: "佐", question: "志望動機を教えてください。", answer: "大学時代に長期インターンでWebサービスの企画に携わり、ユーザーの課題を解決する仕事に興味を持ちました。", score: 78 },
@@ -308,12 +308,6 @@ function App() {
   const [newest, setNewest] = useState(true);
   const [accent, setAccent] = useState("#1e7149");
   const [notifications, setNotifications] = useState([true, true, false]);
-  const selectedAccent = accentColors.find((color) => color.value === accent) ?? accentColors[0];
-  const accentProperties = {
-    "--accent": accent,
-    "--accent-text": selectedAccent.text,
-    "--accent-on": selectedAccent.on,
-  } as CSSProperties & Record<"--accent" | "--accent-text" | "--accent-on", string>;
   const notify = (message: string) => setNotice(message);
   const toggleNotification = (index: number) => setNotifications((current) => current.map((value, item) => item === index ? !value : value));
   const goTo = (next: Screen, reportEntry?: LogEntry) => {
@@ -369,7 +363,7 @@ function App() {
     goTo("report", entry);
   };
   const openReport = (entry: LogEntry) => goTo("report", entry);
-  return <div className="app-frame" style={accentProperties}>
+  return <div className="app-frame" style={{ "--accent": accent } as CSSProperties & { "--accent": string }}>
     <Sidebar screen={screen} onNavigate={navigate} /><div className="app-main"><TopBar title={titles[screen]} canGoBack={navigation.position > 0} canGoForward={navigation.position < navigation.entries.length - 1} goBack={() => moveNavigation(-1)} goForward={() => moveNavigation(1)} />
       <main className={"app-content screen-" + screen}>
         {screen === "home" && <HomePage go={navigate} notify={notify} />}
