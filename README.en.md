@@ -107,7 +107,9 @@ Older documents and ADRs that assume a Zoom overlay or Supabase do not define th
 
 ## Status
 
-A minimal Node.js development setup is available that launches Electron Main / Preload and a React + TypeScript Renderer. Product features such as recording, transcription, saving logs to SQLite, and AI-assisted reflection have not been implemented yet.
+A minimal Node.js development setup is available that launches Electron Main / Preload and a React + TypeScript Renderer.
+
+The main process now saves practice logs to an on-device SQLite database and calculates speaking rate and filler counts from speech recognition results. Speech recognition itself sits behind a replaceable adapter, and only a development fake that returns a fixed transcript is included so far. Microphone recording in the Renderer, a real speech recognition service, and AI-assisted reflection have not been implemented yet.
 
 ## Development commands
 
@@ -119,7 +121,8 @@ Use Node.js 24 and npm. Install dependencies once, then use the npm scripts to l
     npm test
     npm run lint
     npm run typecheck
+    npm run build:main
     npm run build
     npm run check
 
-`npm run dev` starts the Vite Renderer and Electron together. `npm run start` builds the Renderer and then launches the desktop app. `npm run build` builds the Renderer but does not create a Windows installer.
+`npm run dev` starts the Vite Renderer and Electron together. `npm run start` builds the Renderer and then launches the desktop app. `npm run build:main` compiles the main process TypeScript into `dist-electron`. `npm run build` builds the main process and the Renderer but does not create a Windows installer.

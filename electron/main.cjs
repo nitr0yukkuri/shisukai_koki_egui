@@ -3,6 +3,7 @@ const { pathToFileURL } = require("node:url");
 const { app, BrowserWindow, ipcMain } = require("electron");
 
 let mainWindow;
+let backendHandle;
 
 function createWindow() {
   const devServerUrl = app.isPackaged ? undefined : process.env.VITE_DEV_SERVER_URL;
@@ -82,7 +83,27 @@ ipcMain.handle("window:toggle-maximize", (event) => {
 
 ipcMain.handle("window:close", (event) => getTrustedWindow(event)?.close());
 
-app.whenReady().then(() => {
+// 処理側(main)の本体は TypeScript で書き、dist-electron へビルドしたものを読み込む。
+async function startBackend() {
+  try {
+    const { startBackend: start } = await import("../dist-electron/main/start.js");
+    backendHandle = start({
+      userDataDir: app.getPath("userData"),
+      getWindow: () => mainWindow,
+    });
+    if (backendHandle.error) {
+      console.error("練習ログの保存を準備できませんでした。", backendHandle.error);
+    }
+  } catch (error) {
+    console.error(
+      "バックエンドを読み込めませんでした。npm run build:main を実行してください。",
+      error,
+    );
+  }
+}
+
+app.whenReady().then(async () => {
+  await startBackend();
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -91,4 +112,9 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+
+app.on("will-quit", () => {
+  backendHandle?.close();
+  backendHandle = undefined;
 });
