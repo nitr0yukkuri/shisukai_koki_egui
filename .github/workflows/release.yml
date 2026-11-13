@@ -1,0 +1,85 @@
+name: Windows Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-draft:
+    name: Build Windows installer and draft release
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check release tag
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Release tag must use SemVer, for example v0.1.0. Found: $tag"
+          }
+
+          $version = node -p "require('./package.json').version"
+          if ($tag -ne "v$version") {
+            throw "Release tag $tag does not match package.json version v$version."
+          }
+
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
+          if ($LASTEXITCODE -ne 0) {
+            throw "Release tags must point to a commit already merged into main."
+          }
+
+      - name: Build Windows x64 installer
+        run: npm run make
+
+      - name: Create checksum
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path "out/make/squirrel.windows" -Filter "Jobuhan-Setup.exe" -Recurse |
+            Select-Object -First 1
+          if (-not $installer) {
+            throw "Jobuhan-Setup.exe was not created by Electron Forge."
+          }
+
+          $checksum = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLowerInvariant()
+          $checksumPath = "$($installer.FullName).sha256"
+          "$checksum  $($installer.Name)" | Set-Content -Path $checksumPath -NoNewline -Encoding ascii
+          "INSTALLER_PATH=$($installer.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "CHECKSUM_PATH=$checksumPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Create draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release create $env:GITHUB_REF_NAME `
+            "$env:INSTALLER_PATH" `
+            "$env:CHECKSUM_PATH" `
+            --draft `
+            --verify-tag `
+            --generate-notes `
+            --title "じょぶはん $env:GITHUB_REF_NAME"
