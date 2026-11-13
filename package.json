@@ -1,7 +1,10 @@
 {
   "name": "jobuhan",
+  "productName": "Jobuhan",
   "version": "0.1.0",
   "private": true,
+  "author": "じょぶはん開発チーム",
+  "description": "面接・面談の練習と振り返りを支援するWindowsデスクトップアプリ",
   "type": "module",
   "main": "electron/main.cjs",
   "engines": {
@@ -10,6 +13,7 @@
   "scripts": {
     "dev": "npm run build:main && concurrently --kill-others -n Vite,Electron \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "start": "npm run build && electron .",
+    "make": "npm run build && electron-forge make",
     "test": "node --test",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -18,11 +22,14 @@
     "check": "npm run lint && npm test && npm run build"
   },
   "dependencies": {
+    "electron-squirrel-startup": "1.0.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@electron-forge/cli": "8.0.1",
+    "@electron-forge/maker-squirrel": "8.0.1",
     "@eslint/js": "10.0.1",
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
@@ -40,5 +47,8 @@
   },
   "overrides": {
     "minimatch": "11.0.1"
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.4": true
   }
 }

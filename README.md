@@ -125,6 +125,11 @@ Node.js開発環境として、ElectronのMain / Preload、React + TypeScriptの
     npm run typecheck
     npm run build:main
     npm run build
+    npm run make
     npm run check
 
 npm run devはViteのRendererとElectronを同時に起動します。npm run startはRendererをビルドしてからデスクトップアプリを起動します。npm run build:mainは処理側（Electron main）のTypeScriptをdist-electronへビルドします。npm run buildは処理側とRendererのビルドまでを行い、Windowsインストーラーは作成しません。
+
+`npm run make`はWindows x64向けのSquirrel.Windowsインストーラーを`out/make/squirrel.windows`に作成します。`package.json`のバージョンと一致し、`main`にマージ済みの`v0.1.0`のようなタグをpushすると、GitHub ActionsがインストーラーとSHA-256チェックサムを含むRelease下書きを作ります。内容を確認してからGitHub上で公開してください。公開済みの配布版は[Windows x64 インストーラーをダウンロード](https://github.com/nitr0yukkuri/shisukai_koki_egui/releases/latest/download/Jobuhan-Setup.exe)から取得できます。
+
+コード署名は未設定です。初回起動時にWindows SmartScreenの警告が表示される場合があります。配布範囲を広げる前に署名を検討してください。
