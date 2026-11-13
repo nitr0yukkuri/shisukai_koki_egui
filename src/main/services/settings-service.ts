@@ -3,7 +3,8 @@
  * APIキーはDBに入れない。外部AIを使う段階で safeStorage を使う(内部設計書 §9.4)。
  */
 import type { SettingsRepository } from "../repositories/settings-repository.ts";
-import { SETTINGS_KEYS } from "../../shared/settings-keys.ts";
+import { SETTINGS_KEYS, type SettingsKey } from "../../shared/settings-keys.ts";
+import type { SettingsSetInput } from "../../shared/schemas.ts";
 import type { ConsentState } from "../../shared/types.ts";
 
 export class SettingsService {
@@ -18,12 +19,12 @@ export class SettingsService {
     this.now = now;
   }
 
-  get(key: string): unknown {
+  get(key: SettingsKey): unknown {
     return this.repository.find(key)?.value ?? null;
   }
 
-  set(key: string, value: unknown): void {
-    this.repository.save(key, value, this.now());
+  set(input: SettingsSetInput): void {
+    this.repository.save(input.key, input.value, this.now());
   }
 
   getConsent(): ConsentState {

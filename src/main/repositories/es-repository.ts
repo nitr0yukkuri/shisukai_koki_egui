@@ -75,10 +75,8 @@ export class EsRepository {
 
   deleteSet(esSetId: number): number {
     const changes = this.database.run("DELETE FROM es_sets WHERE id = $id", { id: esSetId }).changes;
-    if (changes > 0) {
-      // 消したESの本文が -wal に残らないようにする(内部設計書 §8.4・FR-29)。
-      this.database.checkpoint();
-    }
+    // 前回チェックポイントがロックで失敗していても、再試行でWALを消去できるよう毎回確認する。
+    this.database.checkpoint();
     return changes;
   }
 }

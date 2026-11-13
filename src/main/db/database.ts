@@ -103,27 +103,59 @@ export function openDatabase(filePath: string): AppDatabase {
       }
     },
     transaction<T>(work: () => T): T {
-      const savepoint = `jobuhan_sp_${depth}`;
-      database.exec(depth === 0 ? "BEGIN" : `SAVEPOINT ${savepoint}`);
-      depth += 1;
+      const level = depth;
+      const savepoint = `jobuhan_sp_${level}`;
+      database.exec(level === 0 ? "BEGIN" : `SAVEPOINT ${savepoint}`);
+      depth = level + 1;
+
+      const rollback = (): void => {
+        if (level === 0) {
+          database.exec("ROLLBACK");
+        } else {
+          database.exec(`ROLLBACK TO ${savepoint}`);
+          database.exec(`RELEASE ${savepoint}`);
+        }
+      };
+
+      let result: T;
       try {
-        const result = work();
-        depth -= 1;
-        database.exec(depth === 0 ? "COMMIT" : `RELEASE ${savepoint}`);
-        return result;
+        result = work();
       } catch (error) {
-        depth -= 1;
         try {
-          database.exec(depth === 0 ? "ROLLBACK" : `ROLLBACK TO ${savepoint}`);
+          rollback();
         } catch {
           // 巻き戻しに失敗した場合は元のエラーを優先して伝える。
+        } finally {
+          depth = level;
         }
         throw error;
+      }
+
+      try {
+        database.exec(level === 0 ? "COMMIT" : `RELEASE ${savepoint}`);
+        return result;
+      } catch (error) {
+        try {
+          rollback();
+        } catch {
+          // 巻き戻しに失敗した場合はコミット時のエラーを優先して伝える。
+        }
+        throw error;
+      } finally {
+        depth = level;
       }
     },
     checkpoint() {
       try {
-        connection.exec("PRAGMA wal_checkpoint(TRUNCATE);");
+        const status = database.get<{ busy: number; log: number; checkpointed: number }>(
+          "PRAGMA wal_checkpoint(TRUNCATE);",
+        );
+        if (!status || status.busy !== 0 || status.log !== status.checkpointed) {
+          throw new AppError(
+            "E_DB",
+            "WALファイルを安全に切り詰められませんでした。ほかのアプリでDBを開いていないか確認して再試行してください。",
+          );
+        }
       } catch (error) {
         wrapDbError(error);
       }

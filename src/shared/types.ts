@@ -152,12 +152,14 @@ export type SessionSummary = {
   totalScore: number | null;
 };
 
+export type EsSetSnapshot = Pick<EsSet, "id" | "name">;
+
 export type SessionDetail = {
   id: number;
   mode: PracticeMode;
   status: SessionStatus;
   esSetId: number | null;
-  esSnapshot: EsSet | null;
+  esSnapshot: EsSetSnapshot | null;
   interviewerImageId: number | null;
   startedAt: string;
   endedAt: string | null;

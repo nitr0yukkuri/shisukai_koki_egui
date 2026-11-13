@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 
+import { SETTINGS_KEYS, FONT_SIZES } from "./settings-keys.ts";
 import {
   ES_BODY_HARD_LIMIT,
   ES_KINDS,
@@ -51,12 +52,21 @@ export const turnRefSchema = z.object({ sessionId: id, turnId: id });
 
 export const practiceFinishSchema = z.object({ sessionId: id, keep: z.boolean().default(true) });
 
-export const settingsKeySchema = z.object({ key: z.string().min(1).max(100) });
+const settingsKey = z.enum([
+  SETTINGS_KEYS.consentExternalAi,
+  SETTINGS_KEYS.microphoneDeviceId,
+  SETTINGS_KEYS.interviewerSelectedImageId,
+  SETTINGS_KEYS.uiFontSize,
+]);
 
-export const settingsSetSchema = z.object({
-  key: z.string().min(1).max(100),
-  value: z.unknown(),
-});
+export const settingsKeySchema = z.object({ key: settingsKey });
+
+export const settingsSetSchema = z.discriminatedUnion("key", [
+  z.object({ key: z.literal(SETTINGS_KEYS.consentExternalAi), value: z.boolean() }),
+  z.object({ key: z.literal(SETTINGS_KEYS.microphoneDeviceId), value: z.string().max(512) }),
+  z.object({ key: z.literal(SETTINGS_KEYS.interviewerSelectedImageId), value: id }),
+  z.object({ key: z.literal(SETTINGS_KEYS.uiFontSize), value: z.enum(FONT_SIZES) }),
+]);
 
 export const consentSetSchema = z.object({ externalAi: z.boolean() });
 

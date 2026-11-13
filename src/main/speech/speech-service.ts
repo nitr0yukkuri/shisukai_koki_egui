@@ -48,6 +48,7 @@ type ActiveTurn = {
   segments: SpeechTurnSegment[];
   chunkCount: number;
   failed: boolean;
+  acceptingCallbacks: boolean;
 };
 
 const noopNotifier: SpeechNotifier = {
@@ -99,14 +100,17 @@ export class SpeechService {
       segments: [],
       chunkCount: 0,
       failed: false,
+      acceptingCallbacks: true,
     };
 
     try {
       turn.stream = await this.recognizer.start({
         onPartial: (text) => {
+          if (!turn.acceptingCallbacks) return;
           this.notifier.partial({ sessionId: turn.sessionId, turnId: turn.turnId, text });
         },
         onFinal: (result) => {
+          if (!turn.acceptingCallbacks) return;
           // 表はSTRICTなので、小数のミリ秒は INTEGER 列へ入らない(内部設計書 §8.1)。
           // 外から来た時刻はここで整数に丸め、以降は整数だけを扱う。
           const words = [...result.words]
@@ -135,6 +139,7 @@ export class SpeechService {
           });
         },
         onError: (error) => {
+          if (!turn.acceptingCallbacks) return;
           turn.failed = true;
           this.notifier.error({
             sessionId: turn.sessionId,
@@ -180,15 +185,27 @@ export class SpeechService {
     this.active = null;
 
     try {
-      await this.withTimeout(turn.stream.finish());
+      const finished = await this.withTimeout(turn.stream.finish());
+      if (!finished) {
+        throw new Error("音声認識の終了がタイムアウトしました。");
+      }
     } catch (error) {
       turn.failed = true;
+      turn.acceptingCallbacks = false;
+      try {
+        turn.stream.abort();
+      } catch {
+        // タイムアウト後の後始末より、回答の確定を優先する。
+      }
       this.notifier.error({
         sessionId: turn.sessionId,
         turnId: turn.turnId,
         code: "E_STT",
         message: error instanceof Error ? error.message : "音声認識の終了に失敗しました。",
       });
+    } finally {
+      // finish() が解決したあとに遅れて届く認識イベントも確定結果へ混ぜない。
+      turn.acceptingCallbacks = false;
     }
 
     const answerText = turn.segments.map((segment) => segment.text).join("");
@@ -220,13 +237,13 @@ export class SpeechService {
     });
   }
 
-  private async withTimeout(work: Promise<void>): Promise<void> {
+  private async withTimeout(work: Promise<void>): Promise<boolean> {
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<void>((resolve) => {
-      timer = setTimeout(resolve, this.finalWaitMs);
+    const timeout = new Promise<false>((resolve) => {
+      timer = setTimeout(() => resolve(false), this.finalWaitMs);
     });
     try {
-      await Promise.race([work, timeout]);
+      return await Promise.race([work.then(() => true as const), timeout]);
     } finally {
       if (timer) {
         clearTimeout(timer);

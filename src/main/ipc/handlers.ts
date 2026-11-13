@@ -87,7 +87,7 @@ export function createInvokeHandlers(backend: Backend): Record<InvokeChannel, In
     [INVOKE_CHANNELS.settingsSet]: (payload) =>
       toResult(() => {
         const input = parse(settingsSetSchema, payload);
-        backend.settings.set(input.key, input.value);
+        backend.settings.set(input);
         return null;
       }),
     [INVOKE_CHANNELS.consentGet]: () => toResult(() => backend.settings.getConsent()),

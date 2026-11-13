@@ -1,5 +1,5 @@
 /** 起動時のマイグレーション(内部設計書 §8.5)。 */
-import { copyFileSync, existsSync } from "node:fs";
+import { copyFileSync, existsSync, rmSync } from "node:fs";
 
 import { AppError } from "../app-error.ts";
 import type { AppDatabase } from "./database.ts";
@@ -63,9 +63,18 @@ export function runMigrations(
   const pending = list.filter((migration) => !applied.has(migration.version));
 
   if (pending.length === 0) {
+    const knownVersion = Math.max(0, ...list.map((migration) => migration.version));
+    const appliedVersion = Math.max(0, ...applied);
+    if (appliedVersion <= knownVersion && options.filePath && options.filePath !== ":memory:") {
+      const backupPath = `${options.filePath}.bak`;
+      if (existsSync(backupPath)) {
+        database.checkpoint();
+        removeBackupFile(backupPath);
+      }
+    }
     return {
       appliedVersions: [],
-      currentVersion: Math.max(0, ...applied),
+      currentVersion: appliedVersion,
     };
   }
 
@@ -93,6 +102,12 @@ export function runMigrations(
     }
   }
 
+  if (backupPath) {
+    // 移行前のページ内容がWALに残らないことを確かめてから控えを消す。
+    database.checkpoint();
+    removeBackupFile(backupPath);
+  }
+
   return {
     appliedVersions: done,
     currentVersion: Math.max(...done, ...applied, 0),
@@ -107,10 +122,20 @@ function backupDatabaseFile(database: AppDatabase, filePath?: string): string | 
   try {
     // WALモードでは直前の変更が -wal 側に残る。本体へ書き戻してから複製しないと、
     // 控えだけが古い状態になる。
-    database.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    database.checkpoint();
     copyFileSync(filePath, backupPath);
     return backupPath;
   } catch (error) {
     throw new AppError("E_DB", "データベースの控えを作れませんでした。", { cause: error });
+  }
+}
+
+function removeBackupFile(backupPath: string): void {
+  try {
+    rmSync(backupPath, { force: true });
+  } catch (error) {
+    throw new AppError("E_DB", `不要になったDBバックアップを削除できませんでした: ${backupPath}`, {
+      cause: error,
+    });
   }
 }

@@ -96,6 +96,32 @@ test("外部キーの連鎖削除が効く", () => {
   }
 });
 
+test("COMMIT失敗後もトランザクションを巻き戻して再利用できる", () => {
+  const database = openDatabase(":memory:");
+  try {
+    database.exec(`
+      CREATE TABLE tx_parent (id INTEGER PRIMARY KEY) STRICT;
+      CREATE TABLE tx_child (
+        parent_id INTEGER NOT NULL REFERENCES tx_parent(id) DEFERRABLE INITIALLY DEFERRED
+      ) STRICT;
+    `);
+
+    assert.throws(
+      () => database.transaction(() => database.run("INSERT INTO tx_child (parent_id) VALUES (1)")),
+      isDbError,
+    );
+    assert.equal(database.get("SELECT COUNT(*) AS count FROM tx_child").count, 0);
+
+    database.transaction(() => {
+      database.run("INSERT INTO tx_parent (id) VALUES (1)");
+      database.run("INSERT INTO tx_child (parent_id) VALUES (1)");
+    });
+    assert.equal(database.get("SELECT COUNT(*) AS count FROM tx_child").count, 1);
+  } finally {
+    database.close();
+  }
+});
+
 test("トランザクションは失敗したら巻き戻る", () => {
   const database = openDatabase(":memory:");
   try {
@@ -112,48 +138,62 @@ test("トランザクションは失敗したら巻き戻る", () => {
   }
 });
 
-test("新しいDBでは控えを作らず、更新のある既存DBでは更新前の控えを残す", (t) => {
+test("マイグレーションの控えは失敗時だけ残し、成功時に削除する", (t) => {
   const directory = mkdtempSync(path.join(tmpdir(), "jobuhan-migrate-"));
   const filePath = path.join(directory, "jobuhan.db");
   const backupPath = `${filePath}.bak`;
   t.after(() => rmSync(directory, { recursive: true, force: true }));
 
-  // 作ったばかりのDBには守るデータがないので、控えは作らない。
-  const first = openDatabase(filePath);
+  const database = openDatabase(filePath);
   try {
-    runMigrations(first, { filePath });
-  } finally {
-    first.close();
-  }
-  assert.equal(existsSync(backupPath), false);
+    runMigrations(database, { filePath });
+    assert.equal(existsSync(backupPath), false, "新規DBには控えを作らない");
 
-  // 既存DBに新しい版を適用するときは、適用前の状態を控えに残す。
-  const second = openDatabase(filePath);
-  try {
-    second.run("INSERT INTO settings (key, value, updated_at) VALUES ('a', '1', 'now')");
-    const result = runMigrations(second, {
+    database.run("INSERT INTO settings (key, value, updated_at) VALUES ('a', '1', 'now')");
+    const success = runMigrations(database, {
       filePath,
       migrations: [
         ...migrations,
         { version: 999, name: "test-only", sql: "CREATE TABLE migrate_probe (id INTEGER PRIMARY KEY);" },
       ],
     });
-    assert.deepEqual(result.appliedVersions, [999]);
-  } finally {
-    second.close();
-  }
-  assert.equal(existsSync(backupPath), true);
+    assert.deepEqual(success.appliedVersions, [999]);
+    assert.equal(existsSync(backupPath), false, "更新成功後の控えは削除する");
 
-  // 控えはWALの内容まで書き戻してから作るので、直前の行も入っている。
-  const backup = openDatabase(backupPath);
-  try {
-    assert.equal(backup.get("SELECT COUNT(*) AS count FROM settings").count, 1);
-    const tables = backup
-      .all("SELECT name FROM sqlite_master WHERE type = 'table'")
-      .map((row) => row.name);
-    assert.equal(tables.includes("migrate_probe"), false, "控えは更新前の状態であるべき");
+    assert.throws(
+      () =>
+        runMigrations(database, {
+          filePath,
+          migrations: [
+            ...migrations,
+            { version: 999, name: "test-only", sql: "CREATE TABLE migrate_probe (id INTEGER PRIMARY KEY);" },
+            {
+              version: 1000,
+              name: "test-failure",
+              sql: "CREATE TABLE migration_failure_probe (id INTEGER PRIMARY KEY); SELECT * FROM missing_table;",
+            },
+          ],
+        }),
+      isDbError,
+    );
+    assert.equal(existsSync(backupPath), true, "更新失敗時の復旧用控えは残す");
+
+    const backup = openDatabase(backupPath);
+    try {
+      assert.equal(backup.get("SELECT COUNT(*) AS count FROM settings").count, 1);
+      assert.equal(
+        backup.get("SELECT COUNT(*) AS count FROM sqlite_master WHERE name = 'migrate_probe'").count,
+        1,
+      );
+      assert.equal(
+        backup.get("SELECT COUNT(*) AS count FROM sqlite_master WHERE name = 'migration_failure_probe'").count,
+        0,
+      );
+    } finally {
+      backup.close();
+    }
   } finally {
-    backup.close();
+    database.close();
   }
 });
 
@@ -293,6 +333,79 @@ test("質問バンクのcareerは経歴/資格の質問で、自己紹介も入�
       database.get("SELECT COUNT(*) AS count FROM questions WHERE category = '導入'").count >= 1,
       "自己紹介の質問がありません",
     );
+  } finally {
+    database.close();
+  }
+});
+
+test("WALのチェックポイントがブロックされたら削除成功として扱わない", (t) => {
+  const directory = mkdtempSync(path.join(tmpdir(), "jobuhan-checkpoint-"));
+  const filePath = path.join(directory, "jobuhan.db");
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+
+  const database = openDatabase(filePath);
+  const reader = openDatabase(filePath);
+  try {
+    runMigrations(database, { filePath });
+    const esSetId = database.run(
+      "INSERT INTO es_sets (name, created_at, updated_at) VALUES ('A社', 't', 't')",
+    ).lastInsertRowid;
+    database.checkpoint();
+
+    reader.exec("BEGIN");
+    reader.get("SELECT COUNT(*) AS count FROM es_sets");
+    database.exec("PRAGMA busy_timeout = 0");
+
+    assert.throws(() => new EsRepository(database).deleteSet(esSetId), isDbError);
+    assert.equal(database.get("SELECT COUNT(*) AS count FROM es_sets").count, 0);
+
+    reader.exec("ROLLBACK");
+    assert.equal(new EsRepository(database).deleteSet(esSetId), 0, "再試行でWALを消去できる");
+    assert.doesNotThrow(() => database.checkpoint());
+    const walPath = `${filePath}-wal`;
+    if (existsSync(walPath)) {
+      assert.equal(statSync(walPath).size, 0);
+    }
+  } finally {
+    reader.close();
+    database.close();
+  }
+});
+
+test("既存履歴のES本文を移行後にDB・WAL・控えから消す", (t) => {
+  const directory = mkdtempSync(path.join(tmpdir(), "jobuhan-snapshot-"));
+  const filePath = path.join(directory, "jobuhan.db");
+  const backupPath = `${filePath}.bak`;
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+
+  const database = openDatabase(filePath);
+  try {
+    runMigrations(database, { migrations: migrations.slice(0, 2), filePath });
+    const secret = "過去のES秘密本文";
+    const probe = Buffer.from(secret, "utf8");
+    const snapshot = {
+      id: 42,
+      name: "応募先",
+      items: [{ kind: "self_pr", body: secret }],
+    };
+    const sessionId = database.run(
+      `INSERT INTO sessions (mode, es_snapshot_json, status, started_at)
+       VALUES ('solo', $snapshot, 'finished', '2026-11-13T00:00:00.000Z')`,
+      { snapshot: JSON.stringify(snapshot) },
+    ).lastInsertRowid;
+
+    const result = runMigrations(database, { filePath });
+    assert.deepEqual(result.appliedVersions, [3]);
+    const stored = database.get("SELECT es_snapshot_json FROM sessions WHERE id = $id", {
+      id: sessionId,
+    });
+    assert.deepEqual(JSON.parse(stored.es_snapshot_json), { id: 42, name: "応募先" });
+    assert.equal(existsSync(backupPath), false, "移行成功後の控えは削除する");
+    assert.equal(readFileSync(filePath).includes(probe), false, "DBファイルに本文が残らない");
+    const walPath = `${filePath}-wal`;
+    if (existsSync(walPath)) {
+      assert.equal(statSync(walPath).size, 0, "WALを切り詰める");
+    }
   } finally {
     database.close();
   }

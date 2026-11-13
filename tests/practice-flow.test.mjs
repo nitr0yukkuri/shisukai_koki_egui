@@ -122,6 +122,9 @@ test("1回の練習の流れがSQLiteに保存される", async () => {
       done: true,
     });
 
+    // ES本文は履歴へ複製しない。削除後もセット名だけは履歴に残す。
+    unwrap(await handlers["es:delete"]({ esSetId: saved.id }));
+
     const history = unwrap(await handlers["history:list"]());
     assert.equal(history.length, 1);
     assert.equal(history[0].status, "finished");
@@ -133,7 +136,7 @@ test("1回の練習の流れがSQLiteに保存される", async () => {
 
     const detail = unwrap(await handlers["history:get"]({ sessionId: started.sessionId }));
     assert.equal(detail.turns.length, 3);
-    assert.equal(detail.esSnapshot.name, "本命企業");
+    assert.deepEqual(detail.esSnapshot, { id: saved.id, name: "本命企業" });
     assert.equal(detail.turns[0].utterances.length, 3);
     assert.equal(detail.turns[2].status, "asked");
 
@@ -248,6 +251,55 @@ test("中断した練習は起動時にinterruptedへ直り、ログは残る", 
   }
 });
 
+test("回答保存に失敗しても再試行でき、回答開始失敗時は認識を中断する", async () => {
+  const { backend, handlers } = setup();
+  try {
+    const started = unwrap(await handlers["practice:start"]({ questionCount: 3 }));
+
+    backend.database.exec(`
+      CREATE TRIGGER fail_answer_start
+      BEFORE UPDATE OF status ON turns
+      WHEN NEW.status = 'answering'
+      BEGIN
+        SELECT RAISE(ABORT, 'test answer start failure');
+      END;
+    `);
+    const failedStart = await handlers["practice:beginAnswer"]({ sessionId: started.sessionId });
+    assert.equal(failedStart.ok, false);
+    assert.equal(failedStart.error.code, "E_DB");
+    backend.database.exec("DROP TRIGGER fail_answer_start");
+
+    const answer = unwrap(await handlers["practice:beginAnswer"]({ sessionId: started.sessionId }));
+    sendChunks(backend, started.sessionId, answer.turnId, 8);
+    backend.database.exec(`
+      CREATE TRIGGER fail_utterance_save
+      BEFORE INSERT ON utterances
+      BEGIN
+        SELECT RAISE(ABORT, 'test answer save failure');
+      END;
+    `);
+
+    const failedSave = await handlers["practice:endAnswer"]({
+      sessionId: started.sessionId,
+      turnId: answer.turnId,
+    });
+    assert.equal(failedSave.ok, false);
+    assert.equal(failedSave.error.code, "E_DB");
+    backend.database.exec("DROP TRIGGER fail_utterance_save");
+
+    const retried = unwrap(
+      await handlers["practice:endAnswer"]({
+        sessionId: started.sessionId,
+        turnId: answer.turnId,
+      }),
+    );
+    assert.equal(retried.status, "answered");
+    assert.ok(retried.answerText.includes("大学時代は"));
+  } finally {
+    backend.close();
+  }
+});
+
 test("同意の状態はsettingsに残る", async () => {
   const { backend, handlers } = setup();
   try {
@@ -262,6 +314,13 @@ test("同意の状態はsettingsに残る", async () => {
 
     unwrap(await handlers["settings:set"]({ key: "microphone.deviceId", value: "default" }));
     assert.equal(unwrap(await handlers["settings:get"]({ key: "microphone.deviceId" })), "default");
+
+    const rejectedSecret = await handlers["settings:set"]({ key: "api.key", value: "secret" });
+    assert.equal(rejectedSecret.ok, false);
+    assert.equal(rejectedSecret.error.code, "E_VALIDATION");
+    const rejectedValue = await handlers["settings:set"]({ key: "ui.fontSize", value: "giant" });
+    assert.equal(rejectedValue.ok, false);
+    assert.equal(rejectedValue.error.code, "E_VALIDATION");
   } finally {
     backend.close();
   }

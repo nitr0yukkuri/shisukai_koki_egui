@@ -1,7 +1,7 @@
 /** sessions / turns / utterances / filler_events のSQL(内部設計書 §8.3)。 */
 import type { AppDatabase } from "../db/database.ts";
 import type {
-  EsSet,
+  EsSetSnapshot,
   FillerHit,
   PracticeMode,
   SessionDetail,
@@ -136,10 +136,8 @@ export class SessionRepository {
   deleteSession(sessionId: number): number {
     const changes = this.database.run("DELETE FROM sessions WHERE id = $id", { id: sessionId })
       .changes;
-    if (changes > 0) {
-      // 消した会話ログが -wal に残らないようにする(内部設計書 §8.4・FR-29)。
-      this.database.checkpoint();
-    }
+    // 前回チェックポイントがロックで失敗していても、再試行でWALを消去できるよう毎回確認する。
+    this.database.checkpoint();
     return changes;
   }
 
@@ -355,10 +353,17 @@ function parseWords(raw: string | null): SpeechWord[] {
   }
 }
 
-function parseEsSnapshot(raw: string): EsSet | null {
+function parseEsSnapshot(raw: string): EsSetSnapshot | null {
   try {
     const parsed: unknown = JSON.parse(raw);
-    return parsed !== null && typeof parsed === "object" ? (parsed as EsSet) : null;
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return null;
+    }
+    const snapshot = parsed as { id?: unknown; name?: unknown };
+    if (!Number.isInteger(snapshot.id) || (snapshot.id as number) <= 0 || typeof snapshot.name !== "string") {
+      return null;
+    }
+    return { id: snapshot.id as number, name: snapshot.name };
   } catch {
     return null;
   }

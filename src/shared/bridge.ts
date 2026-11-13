@@ -3,6 +3,7 @@
  * preload.cjs と renderer の型(src/types/electron.d.ts)が同じ定義を参照するために置く。
  */
 import type { IpcResult } from "./errors.ts";
+import type { SettingsKey } from "./settings-keys.ts";
 import type {
   AnswerStarted,
   AudioChunkMessage,
@@ -59,8 +60,8 @@ export type JobuhanBridge = {
     delete: (sessionId: number) => Promise<IpcResult<null>>;
   };
   settings: {
-    get: (key: string) => Promise<IpcResult<unknown>>;
-    set: (key: string, value: unknown) => Promise<IpcResult<null>>;
+    get: (key: SettingsKey) => Promise<IpcResult<unknown>>;
+    set: (key: SettingsKey, value: unknown) => Promise<IpcResult<null>>;
   };
   consent: {
     get: () => Promise<IpcResult<ConsentState>>;

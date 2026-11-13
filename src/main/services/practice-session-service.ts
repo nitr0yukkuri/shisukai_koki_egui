@@ -8,7 +8,7 @@ import { AppError } from "../app-error.ts";
 import type { AppDatabase } from "../db/database.ts";
 import type { EsRepository } from "../repositories/es-repository.ts";
 import type { SessionRepository } from "../repositories/session-repository.ts";
-import type { SpeechService } from "../speech/speech-service.ts";
+import type { SpeechService, SpeechTurnResult } from "../speech/speech-service.ts";
 import type {
   AnswerStarted,
   EsKind,
@@ -36,6 +36,8 @@ type ActivePractice = {
   index: number;
   currentTurnId: number;
   answering: boolean;
+  /** DB保存に失敗したとき、同じ回答を再保存するためにメモリへ保持する。 */
+  pendingAnswer?: { turnId: number; result: SpeechTurnResult; endedAt: string };
 };
 
 export class PracticeSessionService {
@@ -118,7 +120,12 @@ export class PracticeSessionService {
 
     const turnId = active.currentTurnId;
     await this.deps.speech.beginTurn({ sessionId, turnId });
-    this.deps.sessions.startAnswering(turnId, this.now());
+    try {
+      this.deps.sessions.startAnswering(turnId, this.now());
+    } catch (error) {
+      this.deps.speech.abortTurn();
+      throw error;
+    }
     active.answering = true;
 
     return { turnId, recognizer: this.deps.speech.recognizerName };
@@ -130,13 +137,24 @@ export class PracticeSessionService {
    */
   async endAnswer(sessionId: number, turnId: number): Promise<TurnRecord> {
     const active = this.requireActive(sessionId);
-    if (!active.answering || active.currentTurnId !== turnId) {
+    if (active.currentTurnId !== turnId) {
       throw new AppError("E_STATE", "回答中の質問が見つかりません。");
     }
 
-    const result = await this.deps.speech.endTurn({ sessionId, turnId });
-    active.answering = false;
-    const endedAt = this.now();
+    if (!active.pendingAnswer) {
+      if (!active.answering) {
+        throw new AppError("E_STATE", "回答中の質問が見つかりません。");
+      }
+      const result = await this.deps.speech.endTurn({ sessionId, turnId });
+      active.answering = false;
+      active.pendingAnswer = { turnId, result, endedAt: this.now() };
+    }
+
+    const pending = active.pendingAnswer;
+    if (!pending || pending.turnId !== turnId) {
+      throw new AppError("E_STATE", "保存待ちの回答が見つかりません。");
+    }
+    const { result, endedAt } = pending;
 
     this.deps.database.transaction(() => {
       this.deps.sessions.clearTurnRecords(turnId);
@@ -174,14 +192,15 @@ export class PracticeSessionService {
     if (!saved) {
       throw new AppError("E_DB", "回答を保存できませんでした。");
     }
+    active.pendingAnswer = undefined;
     return saved;
   }
 
   /** 次の質問。残りがなければ練習を終了する。 */
   next(sessionId: number): PracticeNextResult {
     const active = this.requireActive(sessionId);
-    if (active.answering) {
-      throw new AppError("E_STATE", "回答中です。先に回答を終了してください。");
+    if (active.answering || active.pendingAnswer) {
+      throw new AppError("E_STATE", "回答中または保存待ちです。先に回答を確定してください。");
     }
 
     const nextIndex = active.index + 1;
@@ -217,6 +236,9 @@ export class PracticeSessionService {
     }
 
     const active = this.active?.sessionId === sessionId ? this.active : null;
+    if (keep && active?.pendingAnswer) {
+      throw new AppError("E_STATE", "回答を保存できていません。回答を確定してから終了してください。");
+    }
     if (active?.answering) {
       this.deps.speech.abortTurn();
     }
