@@ -24,8 +24,8 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1320,
     height: 800,
-    minWidth: 1000,
-    minHeight: 700,
+    minWidth: 640,
+    minHeight: 560,
     frame: false,
     backgroundColor: "#eaf4f1",
     webPreferences: {

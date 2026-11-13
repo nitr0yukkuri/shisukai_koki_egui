@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from "react";
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 
 type Screen = "home" | "solo" | "partner" | "history" | "report" | "settings";
 type NavScreen = Exclude<Screen, "report">;
 type Mode = "solo" | "partner";
-type Filter = "all" | Mode;
 type ReportTab = "points" | "hints" | "transcript";
+type IconName = "home" | "user" | "users" | "chart" | "settings" | "speaker" | "microphone" | "palette" | "account" | "profile" | "bell" | "close";
 type LogEntry = {
   id: number; date: string; mode: Mode; partner: string; initial: string;
   question: string; answer: string; score: number;
 };
 type NavigationEntry = { screen: Screen; report?: { entry: LogEntry; tab: ReportTab } };
+type Profile = { name: string; bio: string };
 
 const img = (name: string) => "./figma/" + name;
 const questions = ["学生時代に力を入れたことは？", "あなたの強みを教えてください。", "志望動機を教えてください。"];
@@ -22,54 +23,80 @@ const accentColors = [
   { label: "サン", value: "#dca623", image: "setting-swatch-sun.svg" },
   { label: "コーラル", value: "#df5c4c", image: "setting-swatch-coral.svg" },
 ] as const;
+const defaultProfile: Profile = { name: "練習ユーザー", bio: "" };
 const logs: LogEntry[] = [
   { id: 1, date: "2024年3月15日（金） 14:32", mode: "partner", partner: "佐藤 花子さん", initial: "佐", question: "志望動機を教えてください。", answer: "大学時代に長期インターンでWebサービスの企画に携わり、ユーザーの課題を解決する仕事に興味を持ちました。", score: 78 },
-  { id: 2, date: "2024年3月12日（火） 19:08", mode: "solo", partner: "一人練習", initial: "AI", question: "自己PRをお願いします。", answer: "強みは周囲を巻き込み、最後までやり切る力です。文化祭の企画では役割を整理し、進行を支えました。", score: 85 },
+  { id: 2, date: "2024年3月12日（火） 19:08", mode: "solo", partner: "練習ユーザー", initial: "AI", question: "自己PRをお願いします。", answer: "強みは周囲を巻き込み、最後までやり切る力です。文化祭の企画では役割を整理し、進行を支えました。", score: 85 },
   { id: 3, date: "2024年3月8日（金） 16:45", mode: "partner", partner: "高橋 健さん", initial: "高", question: "学生時代に力を入れたことは？", answer: "サークルの参加率を上げるため、メンバーの声を聞き、練習の進め方を見直しました。", score: 64 },
-  { id: 4, date: "2024年3月5日（火） 15:20", mode: "solo", partner: "一人練習", initial: "AI", question: "最近気になったニュースは？", answer: "物流業界の人手不足に関心を持ち、サービスや働き方への影響について調べました。", score: 72 },
+  { id: 4, date: "2024年3月5日（火） 15:20", mode: "solo", partner: "練習ユーザー", initial: "AI", question: "最近気になったニュースは？", answer: "物流業界の人手不足に関心を持ち、サービスや働き方への影響について調べました。", score: 72 },
 ];
 
-const navItems: { screen: NavScreen; label: string; icon: string }[] = [
+const navItems: { screen: NavScreen; label: string; icon: IconName }[] = [
   { screen: "home", label: "ホーム", icon: "home" },
-  { screen: "solo", label: "一人", icon: "person" },
-  { screen: "partner", label: "誰か", icon: "people" },
-  { screen: "history", label: "振り返り", icon: "reflection" },
+  { screen: "solo", label: "一人", icon: "user" },
+  { screen: "partner", label: "誰か", icon: "users" },
+  { screen: "history", label: "振り返り", icon: "chart" },
   { screen: "settings", label: "設定", icon: "settings" },
 ];
-const appIcons: Record<string, string> = {
-  home: "app-icon-home.svg", person: "app-icon-person.svg", people: "app-icon-people.svg",
-  reflection: "app-icon-reflection.svg", settings: "app-icon-settings.svg",
+const iconContent: Record<IconName, ReactNode> = {
+  home: <><path d="m3 10 9-7 9 7" /><path d="M5 9v11h14V9M9 20v-6h6v6" /></>,
+  user: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
+  users: <><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="10" cy="7" r="4" /><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
+  chart: <><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></>,
+  settings: <><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.6.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.6-.9l-1.7.7-1.4-2.4L7.5 15a8 8 0 0 1 0-1.9L6.1 12l1.4-2.4 1.7.7a8 8 0 0 1 1.6-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.6.9l1.7-.7 1.4 2.4-1.4 1.1a8 8 0 0 1-.1 1.9Z" /></>,
+  speaker: <><path d="M11 5 6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" /></>,
+  microphone: <><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8" /></>,
+  palette: <><path d="M12 3a9 9 0 1 0 0 18h1.2a2 2 0 0 0 1.4-3.4 1.5 1.5 0 0 1 1.1-2.6H18a3 3 0 0 0 3-3A9 9 0 0 0 12 3Z" /><circle cx="7.5" cy="10" r=".8" /><circle cx="11" cy="7" r=".8" /><circle cx="16" cy="8" r=".8" /></>,
+  account: <><circle cx="12" cy="8" r="4" /><path d="M5 21a7 7 0 0 1 14 0M19 4v4M17 6h4" /></>,
+  profile: <><circle cx="12" cy="8" r="3.5" /><path d="M4.5 20a7.5 7.5 0 0 1 15 0" /></>,
+  bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></>,
+  close: <><path d="m6 6 12 12M18 6 6 18" /></>,
 };
-const homeIcons: Record<string, string> = {
-  home: "home-icon-home.svg", person: "home-icon-person.svg", people: "home-icon-people.svg",
-  reflection: "home-icon-reflection.svg", settings: "home-icon-settings.svg",
-};
+
+function readStoredAccent(): string {
+  try {
+    const saved = window.localStorage.getItem("jobuhan:accent");
+    return accentColors.some((color) => color.value === saved) ? saved! : "#1e7149";
+  } catch { return "#1e7149"; }
+}
+
+function readStoredNotifications(): boolean[] {
+  try {
+    const saved: unknown = JSON.parse(window.localStorage.getItem("jobuhan:notifications") ?? "null");
+    if (Array.isArray(saved) && saved.length === 3 && saved.every((value) => typeof value === "boolean")) return saved as boolean[];
+  } catch { /* Use defaults when local storage is unavailable. */ }
+  return [true, true, false];
+}
+
+function readStoredProfile(): Profile {
+  try {
+    const saved: unknown = JSON.parse(window.localStorage.getItem("jobuhan:profile") ?? "null");
+    if (saved && typeof saved === "object" && "name" in saved && "bio" in saved && typeof saved.name === "string" && typeof saved.bio === "string") return { name: saved.name, bio: saved.bio };
+  } catch { /* Use defaults when local storage is unavailable. */ }
+  return defaultProfile;
+}
 
 function Image({ name, alt = "", className }: { name: string; alt?: string; className?: string }) {
   return <img src={img(name)} alt={alt} className={className} />;
 }
 
+function Icon({ name, className }: { name: IconName; className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{iconContent[name]}</svg>;
+}
+
 function Sidebar({ screen, onNavigate }: { screen: Screen; onNavigate: (screen: NavScreen) => void }) {
-  const isHome = screen === "home";
-  const icons = isHome ? homeIcons : appIcons;
   return (
     <aside className="sidebar">
-      <div className="brand-lockup"><Image name={isHome ? "home-brand-leaf.svg" : "app-brand-leaf.svg"} className="brand-leaf" /><span>じょぶはん</span></div>
+      <div className="brand-lockup"><Image name="app-brand-leaf.svg" className="brand-leaf" /><span>じょぶはん</span></div>
       <div className="sidebar-divider" />
       <nav className="side-navigation" aria-label="メインメニュー">
         {navItems.map((item) => {
           const active = item.screen === screen || (screen === "report" && item.screen === "history");
-          return <button key={item.screen} type="button" className={"nav-item" + (active ? " is-active" : "")} aria-current={active ? "page" : undefined} onClick={() => onNavigate(item.screen)}>
-            <Image name={icons[item.icon]} className="nav-icon" /><span>{item.label}</span>
+          return <button key={item.screen} title={item.label} type="button" className={"nav-item" + (active ? " is-active" : "")} aria-current={active ? "page" : undefined} onClick={() => onNavigate(item.screen)}>
+            {item.icon === "settings" ? <Image name="ic_fluent_settings_24_regular.png" className="nav-icon settings-nav-icon" /> : <Icon name={item.icon} className="nav-icon" />}<span>{item.label}</span>
           </button>;
         })}
       </nav>
-      <section className="weekly-progress" aria-label="今週の練習状況">
-        <Image name={isHome ? "home-progress-leaf.svg" : "app-progress-leaf.svg"} className="progress-leaf" />
-        <p className="progress-message">継続が<br />自信につながる</p>
-        <div className="progress-track"><span /></div>
-        <p className="progress-caption">今週の練習 3 / 5 回</p>
-      </section>
     </aside>
   );
 }
@@ -94,7 +121,7 @@ function TopBar({ title, canGoBack, canGoForward, goBack, goForward }: {
 function HomePage({ go, notify }: { go: (screen: NavScreen) => void; notify: (message: string) => void }) {
   return <section className="home-view">
     <div className="home-heading">
-      <h1>伝えたいことを、自分の言葉で。</h1><span className="heading-underline" />
+      <h1>ESに基づいた面接練習</h1><span className="heading-underline" />
       <p>質問カードをきっかけに話してみましょう。<br />話した内容を記録して、あとから振り返ることができます。</p>
     </div>
     <Image name="home-brand-logo.png" alt="じょぶはん" className="home-brand-logo" />
@@ -103,7 +130,6 @@ function HomePage({ go, notify }: { go: (screen: NavScreen) => void; notify: (me
         <div className="home-card-intro">
           <div className="home-icon-disc"><Image name="home-microphone.svg" className="home-card-icon" /></div>
           <div className="home-card-copy"><h2>練習を始める</h2><p>一人でも、誰かと一緒でも<br />自分のペースで練習できます。</p></div>
-          <Image name="home-arrow.svg" className="card-arrow" />
         </div>
         <div className="start-actions">
           <button className="button button-primary" type="button" onClick={() => go("solo")}><Image name="home-person.svg" />一人で始める</button>
@@ -114,7 +140,6 @@ function HomePage({ go, notify }: { go: (screen: NavScreen) => void; notify: (me
         <div className="home-card-intro">
           <div className="home-icon-disc documents-disc"><Image name="home-document.svg" className="home-card-icon" /></div>
           <div className="home-card-copy"><h2>履歴書・ESを登録</h2><p>経験や志望内容を登録すると、<br />振り返りに役立てられます。</p></div>
-          <Image name="home-arrow.svg" className="card-arrow" />
         </div>
         <button className="button button-document" type="button" onClick={() => notify("履歴書・ESの登録機能は準備中です。書類はまだ保存・送信されません。")}><Image name="home-document-outline.svg" />書類を登録する</button>
       </article>
@@ -159,24 +184,20 @@ function PracticePage({ mode, question, setQuestion, answer, setAnswer, finish, 
   </section>;
 }
 
-function HistoryPage({ filter, setFilter, newest, setNewest, open }: {
-  filter: Filter; setFilter: (value: Filter) => void; newest: boolean; setNewest: (value: boolean) => void; open: (entry: LogEntry) => void;
+function HistoryPage({ newest, setNewest, open }: {
+  newest: boolean; setNewest: (value: boolean) => void; open: (entry: LogEntry) => void;
 }) {
-  const entries = logs.filter((entry) => filter === "all" || entry.mode === filter);
-  const ordered = newest ? entries : [...entries].reverse();
+  const ordered = newest ? logs : [...logs].reverse();
   return <section className="history-view">
     <header className="page-heading history-heading"><h1>振り返り履歴</h1><p>これまでの練習を見返して、次の面接に活かしましょう。</p></header>
-    <div className="history-toolbar"><div className="history-filters" role="group" aria-label="練習形式">
-      {([["all", "すべて"], ["solo", "一人"], ["partner", "誰かと"]] as [Filter, string][]).map(([value, label]) => <button className={"filter-button" + (filter === value ? " selected" : "")} key={value} type="button" onClick={() => setFilter(value)}>{label}</button>)}
-    </div><div className="history-meta"><button className="sort-button" type="button" onClick={() => setNewest(!newest)}><Image name="history-sort.svg" />{newest ? "日付の新しい順" : "日付の古い順"}</button><span>全 {entries.length} 件</span></div></div>
+    <div className="history-toolbar"><div className="history-meta"><button className="sort-button" type="button" onClick={() => setNewest(!newest)}><Image name="history-sort.svg" />{newest ? "日付の新しい順" : "日付の古い順"}</button><span>全 {ordered.length} 件</span></div></div>
     <div className="history-list">{ordered.map((entry, index) => <button className={"history-record" + (index === 0 ? " featured" : "")} key={entry.id} type="button" onClick={() => open(entry)}>
-      <span className="record-person"><time>{entry.date}</time><span className={"mode-badge " + entry.mode}>{entry.mode === "solo" ? "一人" : "誰かと"}</span><span className="record-partner"><span className="partner-avatar">{entry.initial}</span><span><strong>{entry.partner}</strong><small>{entry.mode === "solo" ? "一人練習" : "練習相手"}</small></span></span></span>
+      <span className="record-person"><time>{entry.date}</time><span className="record-partner"><span className="partner-avatar">{entry.initial}</span><span><strong>{entry.partner}</strong></span></span></span>
       <span className="record-answer"><small>質問</small><strong>{entry.question}</strong><span className="answer-log-label"><Image name="history-log.svg" />回答ログ</span><span className="answer-excerpt">{entry.answer}</span></span>
       <span className="record-score"><small>参考値</small><span><strong>{entry.score}</strong><small>/ 100 点</small></span><span className="score-track"><i style={{ width: entry.score + "%" }} /></span><b>詳細を見る →</b></span>
-    </button>)}{ordered.length === 0 && <p className="empty-history">この形式の練習ログはまだありません。</p>}</div>
+    </button>)}{ordered.length === 0 && <p className="empty-history">練習ログはまだありません。</p>}</div>
   </section>;
 }
-
 const reportRows: Record<Exclude<ReportTab, "transcript">, { time: string; text: string }[]> = {
   points: [
     { time: "00:12", text: "私は、大学時代に長期インターンシップでWebサービスの企画に携わった経験から、ユーザーの課題を解決する仕事に強く興味を持ちました。" },
@@ -223,26 +244,85 @@ function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: ReportTab; s
   </section>;
 }
 
-function SettingTitle({ icon, title, description }: { icon: string; title: string; description: string }) {
-  return <div className="setting-title"><span className="setting-icon">{icon}</span><h2>{title}</h2><p>{description}</p></div>;
+function SettingTitle({ icon, title, description }: { icon: IconName; title: string; description: string }) {
+  return <div className="setting-title"><span className="setting-icon"><Icon name={icon} /></span><h2>{title}</h2><p>{description}</p></div>;
 }
 
-function SettingsPage({ accent, setAccent, notifications, toggleNotification, notify }: {
+function SettingsPage({ accent, setAccent, notifications, toggleNotification, profile, editProfile, notify }: {
   accent: string; setAccent: (color: string) => void; notifications: boolean[];
-  toggleNotification: (index: number) => void; notify: (message: string) => void;
+  toggleNotification: (index: number) => void; profile: Profile; editProfile: () => void; notify: (message: string) => void;
 }) {
   return <section className="settings-view"><header className="page-heading settings-heading"><h1>設定</h1><p>音声デバイスやカラー、アカウント情報を管理できます。</p></header>
     <div className="settings-grid">
-      <article className="setting-card"><SettingTitle icon="音" title="スピーカー" description="音声の出力先を選択します" /><div className="setting-controls"><button type="button" className="device-select" onClick={() => notify("音声デバイスの選択機能は準備中です。")}>既定のスピーカー <span>⌄</span></button><button type="button" className="setting-button" onClick={() => notify("スピーカーのテスト機能は準備中です。")}>テスト再生</button></div></article>
-      <article className="setting-card"><SettingTitle icon="声" title="マイク" description="音声入力に使うデバイスを選択します" /><div className="setting-controls"><button type="button" className="device-select" onClick={() => notify("音声デバイスの選択機能は準備中です。")}>既定のマイク <span>⌄</span></button><button type="button" className="setting-button" onClick={() => notify("マイクのテスト機能は準備中です。")}>入力をテスト</button></div></article>
-      <article className="setting-card"><SettingTitle icon="色" title="カラー" description="画面のアクセントカラーを選びます" /><div className="color-picker">{accentColors.map((color) => <button className={"color-choice" + (accent === color.value ? " chosen" : "")} key={color.value} type="button" aria-label={color.label} aria-pressed={accent === color.value} onClick={() => setAccent(color.value)}><Image name={color.image} /></button>)}<strong>{accentColors.find((color) => color.value === accent)?.label ?? "フォレスト"}</strong></div></article>
-      <article className="setting-card"><SettingTitle icon="ID" title="アカウント" description="ログイン情報を確認・変更できます" /><div className="account-panel"><span>登録情報・ログイン方法</span><button type="button" className="setting-button" onClick={() => notify("アカウント機能は準備中です。")}>アカウント管理</button></div></article>
-      <article className="setting-card"><SettingTitle icon="人" title="プロフィール" description="表示名やプロフィール画像を編集できます" /><div className="profile-panel"><Image name="setting-profile.svg" /><span><strong>プロフィール情報</strong><small>名前・画像・自己紹介</small></span><button type="button" className="setting-button" onClick={() => notify("プロフィール編集機能は準備中です。")}>プロフィール編集</button></div></article>
-      <article className="setting-card notification-card"><SettingTitle icon="!" title="通知" description="受け取りたい通知を選択します" /><div className="notification-list">{["面接練習のリマインダー", "練習レポートのお知らせ", "サービスからのお知らせ"].map((label, index) => <label className="notification-row" key={label}><span>{label}</span><button className={"toggle-button" + (notifications[index] ? " on" : "")} type="button" role="switch" aria-checked={notifications[index]} aria-label={label} onClick={() => toggleNotification(index)}><span /></button></label>)}</div></article>
+      <article className="setting-card"><SettingTitle icon="speaker" title="スピーカー" description="音声の出力先を選択します" /><div className="setting-controls"><button type="button" className="device-select" onClick={() => notify("音声デバイスの選択機能は準備中です。")}>既定のスピーカー <span>⌄</span></button><button type="button" className="setting-button" onClick={() => notify("スピーカーのテスト機能は準備中です。")}>テスト再生</button></div></article>
+      <article className="setting-card"><SettingTitle icon="microphone" title="マイク" description="音声入力に使うデバイスを選択します" /><div className="setting-controls"><button type="button" className="device-select" onClick={() => notify("音声デバイスの選択機能は準備中です。")}>既定のマイク <span>⌄</span></button><button type="button" className="setting-button" onClick={() => notify("マイクのテスト機能は準備中です。")}>入力をテスト</button></div></article>
+      <article className="setting-card"><SettingTitle icon="palette" title="カラー" description="画面のアクセントカラーを選びます" /><div className="color-picker">{accentColors.map((color) => <button className={"color-choice" + (accent === color.value ? " chosen" : "")} key={color.value} type="button" aria-label={color.label} aria-pressed={accent === color.value} onClick={() => setAccent(color.value)}><Image name={color.image} /></button>)}<strong>{accentColors.find((color) => color.value === accent)?.label ?? "フォレスト"}</strong></div></article>
+      <article className="setting-card"><SettingTitle icon="account" title="アカウント" description="ログイン情報を確認・変更できます" /><div className="account-panel"><span>登録情報・ログイン方法</span><button type="button" className="setting-button" onClick={() => notify("アカウント機能は準備中です。")}>アカウント管理</button></div></article>
+      <article className="setting-card"><SettingTitle icon="profile" title="プロフィール" description="表示名や自己紹介を編集できます" /><div className="profile-panel"><span className="profile-avatar"><Icon name="profile" /></span><span><strong>{profile.name}</strong><small>{profile.bio || "自己紹介はまだありません"}</small></span><button type="button" className="setting-button" onClick={editProfile}>プロフィール編集</button></div></article>
+      <article className="setting-card notification-card"><SettingTitle icon="bell" title="通知" description="受け取りたい通知を選択します" /><div className="notification-list">{["面接練習のリマインダー", "練習レポートのお知らせ", "サービスからのお知らせ"].map((label, index) => <label className="notification-row" key={label}><span>{label}</span><button className={"toggle-button" + (notifications[index] ? " on" : "")} type="button" role="switch" aria-checked={notifications[index]} aria-label={label} onClick={() => toggleNotification(index)}><span /></button></label>)}</div></article>
     </div>
   </section>;
 }
 
+function ProfileDialog({ profile, save, close }: { profile: Profile; save: (profile: Profile) => void; close: () => void }) {
+  const [name, setName] = useState(profile.name);
+  const [bio, setBio] = useState(profile.bio);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const backdrop = backdropRef.current;
+    const background = Array.from(backdrop?.parentElement?.children ?? [])
+      .filter((element): element is HTMLElement => element instanceof HTMLElement && element !== backdrop);
+    const previousInert = background.map((element) => element.inert);
+
+    background.forEach((element) => { element.inert = true; });
+    closeButtonRef.current?.focus();
+
+    return () => {
+      background.forEach((element, index) => { element.inert = previousInert[index]; });
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, []);
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      close();
+      return;
+    }
+    if (event.key !== "Tab") return;
+
+    const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ));
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (!first || !last) {
+      event.preventDefault();
+      event.currentTarget.focus();
+    } else if (event.shiftKey && (active === first || active === event.currentTarget || !event.currentTarget.contains(active))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (active === last || active === event.currentTarget || !event.currentTarget.contains(active))) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  return <div ref={backdropRef} className="dialog-backdrop profile-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
+    <form className="profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-title" onSubmit={(event) => { event.preventDefault(); const cleanName = name.trim(); if (cleanName) save({ name: cleanName, bio: bio.trim() }); }} onKeyDown={handleKeyDown}>
+      <button ref={closeButtonRef} className="dialog-close" type="button" onClick={close} aria-label="閉じる"><Icon name="close" /></button>
+      <span className="dialog-kicker">アカウント設定</span><h2 id="profile-title">プロフィールを編集</h2>
+      <label className="profile-field">表示名<input required maxLength={40} value={name} onChange={(event) => setName(event.currentTarget.value)} /></label>
+      <label className="profile-field">自己紹介<textarea maxLength={240} rows={4} value={bio} onChange={(event) => setBio(event.currentTarget.value)} /></label>
+      <p className="profile-help">入力した内容はこの端末に保存されます。</p>
+      <div className="profile-dialog-actions"><button className="setting-button" type="button" onClick={close}>キャンセル</button><button className="button button-primary" type="submit">保存する</button></div>
+    </form>
+  </div>;
+}
 function HintDialog({ close }: { close: () => void }) {
   const backdropRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -304,12 +384,20 @@ function App() {
   const [showHint, setShowHint] = useState(false);
   const [question, setQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<Mode, Record<number, string>>>({ solo: { 0: sampleAnswer }, partner: { 0: sampleAnswer } });
-  const [filter, setFilter] = useState<Filter>("all");
   const [newest, setNewest] = useState(true);
-  const [accent, setAccent] = useState("#1e7149");
-  const [notifications, setNotifications] = useState([true, true, false]);
+  const [accent, setAccent] = useState(readStoredAccent);
+  const [notifications, setNotifications] = useState(readStoredNotifications);
+  const [profile, setProfile] = useState(readStoredProfile);
+  const [showProfile, setShowProfile] = useState(false);
   const notify = (message: string) => setNotice(message);
   const toggleNotification = (index: number) => setNotifications((current) => current.map((value, item) => item === index ? !value : value));
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("jobuhan:accent", accent);
+      window.localStorage.setItem("jobuhan:notifications", JSON.stringify(notifications));
+      window.localStorage.setItem("jobuhan:profile", JSON.stringify(profile));
+    } catch { /* Keep settings usable for the current session when local storage is unavailable. */ }
+  }, [accent, notifications, profile]);
   const goTo = (next: Screen, reportEntry?: LogEntry) => {
     setNavigation((current) => {
       const entries = current.entries.slice(0, current.position + 1);
@@ -355,7 +443,7 @@ function App() {
       id: 0,
       date: "今回の練習（サンプル）",
       mode,
-      partner: mode === "solo" ? "一人練習" : "サンプル相手",
+      partner: mode === "solo" ? profile.name : "サンプル相手",
       initial: mode === "solo" ? "AI" : "練",
       question: questions[question],
       answer: answers[mode][question] ?? "",
@@ -368,13 +456,14 @@ function App() {
       <main className={"app-content screen-" + screen}>
         {screen === "home" && <HomePage go={navigate} notify={notify} />}
         {(screen === "solo" || screen === "partner") && <PracticePage mode={screen} question={question} setQuestion={setQuestion} answer={answers[screen][question] ?? ""} setAnswer={(value) => setAnswers((current) => ({ ...current, [screen]: { ...current[screen], [question]: value } }))} finish={finish} hint={() => setShowHint(true)} notify={notify} />}
-        {screen === "history" && <HistoryPage filter={filter} setFilter={setFilter} newest={newest} setNewest={setNewest} open={openReport} />}
+        {screen === "history" && <HistoryPage newest={newest} setNewest={setNewest} open={openReport} />}
         {screen === "report" && <ReportPage entry={currentRoute.report?.entry ?? logs[0]} tab={currentRoute.report?.tab ?? "points"} setTab={setReportTab} />}
-        {screen === "settings" && <SettingsPage accent={accent} setAccent={setAccent} notifications={notifications} toggleNotification={toggleNotification} notify={notify} />}
+        {screen === "settings" && <SettingsPage accent={accent} setAccent={setAccent} notifications={notifications} toggleNotification={toggleNotification} profile={profile} editProfile={() => setShowProfile(true)} notify={notify} />}
       </main>
     </div>
     {notice && <div className="status-toast" role="status"><span>{notice}</span><button type="button" aria-label="閉じる" onClick={() => setNotice("")}>×</button></div>}
     {showHint && <HintDialog close={() => setShowHint(false)} />}
+    {showProfile && <ProfileDialog profile={profile} save={(nextProfile) => { setProfile(nextProfile); setShowProfile(false); }} close={() => setShowProfile(false)} />}
   </div>;
 }
 

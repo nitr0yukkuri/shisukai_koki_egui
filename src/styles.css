@@ -363,3 +363,138 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid #79c79a; outli
   .history-record { min-height: 116px; }
   .setting-card { height: 184px; }
 }
+
+/* Consolidated refinements for theme colors, settings layout, and narrow windows. */
+.app-frame {
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, white);
+  --accent-border: color-mix(in srgb, var(--accent) 42%, white);
+  --accent-strong: color-mix(in srgb, var(--accent) 74%, var(--forest));
+}
+.nav-icon { display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.settings-nav-icon {
+  display: block; flex: 0 0 25px; width: 25px; height: 25px; object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+.setting-icon svg { width: 21px; height: 21px; }
+.profile-avatar { display: grid; flex: 0 0 48px; width: 48px; height: 48px; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+.profile-avatar svg { width: 26px; height: 26px; }
+.profile-panel > span:nth-child(2) { min-width: 0; }
+.profile-panel small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-backdrop { z-index: 31; }
+.profile-dialog { position: relative; display: grid; gap: 16px; width: min(520px, 100%); padding: 32px; border: 1px solid var(--border); border-radius: 20px; background: white; box-shadow: 0 24px 80px rgb(13 46 36 / 20%); }
+.profile-dialog h2 { margin: -10px 38px 0 0; color: #18392c; font-size: 22px; }
+.profile-field { display: grid; gap: 7px; color: #18392c; font-size: 13px; font-weight: 650; }
+.profile-field input, .profile-field textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 9px; background: white; color: #18392c; font: inherit; font-weight: 400; }
+.profile-field textarea { resize: vertical; }
+.profile-help { margin: -7px 0 0; color: var(--muted); font-size: 12px; }
+.profile-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.profile-dialog-actions .button, .profile-dialog-actions .setting-button { min-width: 120px; min-height: 44px; height: 44px; }
+.settings-view { display: flex; min-height: 100%; flex-direction: column; padding: 14px 24px 20px; }
+.settings-heading { flex: 0 0 90px; height: 90px; }
+.settings-grid { display: grid; flex: 1 0 auto; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(184px, 1fr)); gap: 12px 16px; }
+.setting-card { height: auto; min-height: 184px; padding: 14px 16px; border-radius: 16px; }
+.home-icon-disc { background: var(--accent-soft); }
+.documents-disc { background: color-mix(in srgb, var(--accent) 8%, white); }
+.heading-underline { background: var(--accent); }
+.button-primary { background: var(--accent); }
+.button-primary:hover { background: var(--accent-strong); }
+.button-outline { border-color: var(--accent-border); }
+.control-primary { border-color: var(--accent); background: var(--accent); }
+.control-primary:hover { background: var(--accent-strong); }
+.nav-item:hover, .nav-item.is-active { background: color-mix(in srgb, var(--accent) 70%, var(--forest)); }
+.topbar-history-controls button { color: var(--accent); }
+.score-track i { background: var(--accent); }
+.color-choice.chosen { border-color: var(--accent); }
+.setting-button:hover { background: var(--accent-soft); }
+
+@media (max-width: 1100px) {
+  .report-view, .history-view, .settings-view { min-width: 0; }
+  .practice-view { min-width: 0; }
+}
+
+@media (max-width: 900px) {
+  .settings-view { display: block; }
+  .settings-heading { height: auto; min-height: 90px; }
+  .settings-grid { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-rows: minmax(184px, auto); }
+}
+
+@media (max-width: 760px) {
+  body { min-width: 0; min-height: 0; }
+  .app-frame { min-width: 0; min-height: 0; flex-direction: column; border-radius: 0; }
+  .app-main { order: 1; height: auto; min-height: 0; }
+  .sidebar { order: 2; display: block; flex: 0 0 64px; width: 100%; height: 64px; padding: 4px 6px; border-radius: 0; }
+  .brand-lockup, .sidebar-divider { display: none; }
+  .side-navigation { display: grid; width: 100%; height: 100%; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+  .nav-item { flex-direction: column; justify-content: center; gap: 2px; height: 56px; min-height: 56px; padding: 2px 0; font-size: 11px; }
+  .nav-item span { display: block; overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-icon, .settings-nav-icon { flex: 0 0 23px; width: 23px; height: 23px; }
+  .app-topbar { flex-basis: 48px; height: 48px; padding-left: 6px; }
+  .topbar-history-controls { gap: 0; margin-right: 4px; }
+  .topbar-history-controls button { width: 26px; }
+  .topbar-context { gap: 6px; font-size: 12px; }
+  .topbar-leaf { flex-basis: 16px; width: 16px; height: 16px; }
+  .window-controls button { width: 34px; }
+  .window-controls img { width: 15px; height: 15px; }
+  .home-view { padding: 0 18px 24px; }
+  .home-heading { padding-top: 118px; }
+  .home-heading h1 { max-width: none; font-size: clamp(25px, 7vw, 32px); }
+  .home-brand-logo { top: 0; right: 50%; width: 205px; height: 112px; transform: translateX(50%); }
+  .home-card-grid { grid-template-columns: 1fr; gap: 14px; margin-top: 28px; }
+  .home-card { height: auto; min-height: 200px; padding: 14px; }
+  .home-card-intro { gap: 12px; height: auto; min-height: 98px; }
+  .home-card-copy { padding-right: 0; }
+  .home-card-copy h2 { font-size: 18px; }
+  .home-card-copy p { font-size: 13px; }
+  .home-icon-disc { flex-basis: 58px; width: 58px; height: 58px; }
+  .home-card-icon { width: 32px; height: 32px; }
+  .start-actions { margin-top: 12px; }
+  .button { min-height: 54px; padding: 8px; font-size: 13px; }
+  .practice-view, .history-view, .report-view, .settings-view { min-width: 0; padding: 16px 14px 24px; }
+  .page-heading h1 { font-size: 24px; }
+  .page-heading p { font-size: 13px; }
+  .practice-heading { height: auto; min-height: 78px; }
+  .practice-canvas { height: clamp(210px, 35vh, 300px); margin-top: 8px; }
+  .transcript-card { height: auto; margin-top: 12px; padding: 12px; }
+  .transcript-header { gap: 8px; }
+  .transcript-title h2 { font-size: 13px; }
+  .record-status { gap: 5px; font-size: 11px; }
+  .transcript-panel { height: 130px; }
+  .transcript-panel textarea { padding: 12px 12px 12px 44px; font-size: 15px; }
+  .practice-controls { height: auto; flex-wrap: wrap; margin-top: 12px; }
+  .control-button { flex: 1 1 130px; height: 44px; padding: 0 8px; font-size: 11px; }
+  .control-primary { min-width: 130px; }
+  .practice-actions { grid-template-columns: 1fr; gap: 10px; }
+  .action-card { min-width: 0; min-height: 64px; height: auto; padding: 10px 12px; }
+  .history-toolbar { height: auto; flex-wrap: wrap; gap: 8px 16px; }
+  .history-meta { width: 100%; justify-content: space-between; }
+  .history-record { grid-template-columns: 1fr; gap: 10px; padding: 14px; }
+  .record-person, .record-answer { border-right: 0; }
+  .record-answer { padding: 0; }
+  .record-score { grid-column: 1; flex-direction: row; align-items: center; gap: 10px; padding: 0; }
+  .record-score > span:nth-child(2) { margin-top: 0; }
+  .score-track { display: none; }
+  .report-heading { height: auto; min-height: 82px; flex-direction: column; gap: 12px; padding-bottom: 14px; }
+  .report-date { max-width: none; text-align: left; }
+  .report-top-grid, .report-middle-grid { grid-template-columns: 1fr; gap: 12px; }
+  .overall-card, .breakdown-card, .metrics-card, .feedback-card { height: auto; min-height: 180px; padding: 13px; }
+  .overall-card { min-height: 205px; }
+  .speech-card { height: auto; min-height: 240px; }
+  .report-disclaimer { position: static; margin: 14px 0 0; }
+  .speech-header { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .report-tabs { max-width: 100%; overflow-x: auto; }
+  .settings-heading { height: auto; min-height: 90px; }
+  .setting-card { padding: 15px; }
+  .setting-controls { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
+  .account-panel { gap: 10px; flex-wrap: wrap; }
+  .account-panel .setting-button { width: auto; }
+  .profile-panel { flex-wrap: wrap; }
+  .profile-panel > span:nth-child(2) { flex: 1 1 calc(100% - 64px); }
+  .profile-panel .setting-button { width: 100%; }
+  .color-picker { margin-top: 24px; gap: 7px; }
+  .color-choice { width: 36px; height: 36px; }
+  .color-choice img { width: 29px; height: 29px; }
+  .dialog-backdrop { padding: 12px; }
+  .hint-dialog, .profile-dialog { padding: 24px 18px; }
+  .hint-dialog h2, .profile-dialog h2 { font-size: 20px; }
+  .status-toast { right: 10px; bottom: 78px; left: 10px; max-width: none; gap: 10px; font-size: 13px; }
+}
