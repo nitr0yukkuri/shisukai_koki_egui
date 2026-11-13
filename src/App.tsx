@@ -93,7 +93,7 @@ function Sidebar({ screen, onNavigate }: { screen: Screen; onNavigate: (screen: 
         {navItems.map((item) => {
           const active = item.screen === screen || (screen === "report" && item.screen === "history");
           return <button key={item.screen} title={item.label} type="button" className={"nav-item" + (active ? " is-active" : "")} aria-current={active ? "page" : undefined} onClick={() => onNavigate(item.screen)}>
-            {item.icon === "settings" ? <i className="nav-icon settings-nav-icon" aria-hidden="true" /> : <Icon name={item.icon} className="nav-icon" />}<span>{item.label}</span>
+            {item.icon === "settings" ? <Image name="ic_fluent_settings_24_regular.png" className="nav-icon settings-nav-icon" /> : <Icon name={item.icon} className="nav-icon" />}<span>{item.label}</span>
           </button>;
         })}
       </nav>
