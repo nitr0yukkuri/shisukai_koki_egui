@@ -4,7 +4,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "node_modules/**", "coverage/**"],
+    ignores: ["dist/**", "dist-electron/**", "node_modules/**", "coverage/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -27,6 +27,13 @@ export default tseslint.config(
     files: ["src/**/*.{ts,tsx}"],
     languageOptions: {
       globals: globals.browser,
+    },
+  },
+  {
+    // 処理側(main)と共有コードはNode.jsで動く。
+    files: ["src/main/**/*.ts", "src/shared/**/*.ts"],
+    languageOptions: {
+      globals: globals.node,
     },
   },
 );

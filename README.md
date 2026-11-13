@@ -109,7 +109,9 @@ AIの役割は面接官の代替や合否判定ではなく、本人の発話を
 
 ## Status
 
-Node.js開発環境として、ElectronのMain / Preload、React + TypeScriptのRendererを起動できる最小構成を用意しています。録音、文字起こし、SQLiteへのログ保存、AIによる振り返りなどのプロダクト機能は、まだ実装していません。
+Node.js開発環境として、ElectronのMain / Preload、React + TypeScriptのRendererを起動できる最小構成を用意しています。
+
+処理側（Electron main）には、端末内SQLiteへの練習ログ保存と、音声認識の結果から話速・言い淀みを計算する処理を実装しました。音声認識そのものは差し替え可能なアダプターにしてあり、現時点では固定の文字起こしを返す開発用の実装（Fake）だけが入っています。マイクからの録音（Renderer）、実際の音声認識サービスとの接続、AIによる振り返りは、まだ実装していません。
 
 ## Development commands
 
@@ -121,7 +123,8 @@ Node.js開発環境として、ElectronのMain / Preload、React + TypeScriptの
     npm test
     npm run lint
     npm run typecheck
+    npm run build:main
     npm run build
     npm run check
 
-npm run devはViteのRendererとElectronを同時に起動します。npm run startはRendererをビルドしてからデスクトップアプリを起動します。npm run buildはRendererのビルドまでを行い、Windowsインストーラーは作成しません。
+npm run devはViteのRendererとElectronを同時に起動します。npm run startはRendererをビルドしてからデスクトップアプリを起動します。npm run build:mainは処理側（Electron main）のTypeScriptをdist-electronへビルドします。npm run buildは処理側とRendererのビルドまでを行い、Windowsインストーラーは作成しません。
