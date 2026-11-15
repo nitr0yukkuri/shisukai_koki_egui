@@ -1,17 +1,13 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const projectRoot = path.dirname(fileURLToPath(import.meta.url));
-const escapedRoot = projectRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const rootPrefix = `${escapedRoot}[\\\\/]`;
-const rootEntry = (entry) => new RegExp(`^${rootPrefix}${entry}(?:[\\\\/]|$)`, "i");
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const rootEntry = (entry) => new RegExp("^[/\\\\]" + escapeRegExp(entry) + "(?:[/\\\\]|$)", "i");
+const envFile = new RegExp("^[/\\\\]\\.env(?:\\.[^/\\\\]+)?$", "i");
 
 export default {
   packagerConfig: {
     asar: true,
     arch: "x64",
     ignore: [
-      new RegExp(`^${rootPrefix}\\.env(?:\\.[^\\\\/]+)?$`, "i"),
+      envFile,
       ...[
         ".agents",
         ".github",
