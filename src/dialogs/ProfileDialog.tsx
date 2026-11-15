@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { Profile } from "../app/types";
 import { Icon } from "../components/Icon";
 
