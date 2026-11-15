@@ -1,6 +1,6 @@
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const rootEntry = (entry) => new RegExp("^[/\\\\]" + escapeRegExp(entry) + "(?:[/\\\\]|$)", "i");
-const envFile = new RegExp("^[/\\\\]\\.env(?:\\.[^/\\\\]+)?$", "i");
+const envFile = new RegExp("(?:^|[/\\\\])\\.env(?:\\.[^/\\\\]+)?$", "i");
 
 export default {
   packagerConfig: {
