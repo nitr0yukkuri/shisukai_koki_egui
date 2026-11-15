@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Icon } from "../components/Icon";
 
 export function HintDialog({ close }: { close: () => void }) {
   const backdropRef = useRef<HTMLDivElement>(null);
