@@ -42,4 +42,10 @@ export default tseslint.config(
       globals: globals.browser,
     },
   },
+  {
+    files: ["jobuhan-download-site/server.mjs"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 );
