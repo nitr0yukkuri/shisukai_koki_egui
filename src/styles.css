@@ -286,7 +286,7 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid #79c79a; outli
 .hint-dialog > p { color: #607668; font-size: 13px; line-height: 1.7; }
 .hint-dialog ol { display: grid; gap: 10px; margin: 20px 0; padding-left: 24px; color: #526c65; font-size: 13px; }
 .hint-dialog li strong { color: #18392c; }
-.dialog-done { width: 100%; }
+.dialog-done { width: 100%; min-height: 48px; }
 
 @media (max-width: 1100px) {
   .sidebar { flex-basis: 176px; }
