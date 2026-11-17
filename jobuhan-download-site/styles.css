@@ -426,7 +426,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
   animation: note-enter 700ms ease both;
 }
 
-.floating-note-es { top: 87px; right: 104px; width: 236px; animation-delay: 160ms; }
+.floating-note-question { top: 87px; right: 104px; width: 236px; animation-delay: 160ms; }
 .floating-note-transcript { top: 527px; left: calc(50% + 244px); width: 258px; animation-delay: 320ms; }
 
 .floating-icon {
@@ -583,28 +583,6 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 .faq-dialog details p { margin: 11px 0 0; color: var(--muted); font-size: 14px; line-height: 1.8; }
 .faq-download { display: inline-flex; margin-top: 12px; color: var(--forest-2); font-size: 14px; font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
-.toast {
-  position: fixed;
-  z-index: 50;
-  right: 24px;
-  bottom: 24px;
-  max-width: min(420px, calc(100vw - 32px));
-  padding: 14px 18px;
-  border: 1px solid rgb(255 255 255 / 22%);
-  border-radius: 12px;
-  background: #123f34;
-  color: #fff;
-  font-size: 14px;
-  line-height: 1.6;
-  box-shadow: 0 14px 34px rgb(13 63 53 / 22%);
-  opacity: 0;
-  transform: translateY(12px);
-  pointer-events: none;
-  transition: opacity 220ms ease, transform 220ms ease;
-}
-
-.toast.is-visible { opacity: 1; transform: translateY(0); }
-
 .js-enabled .reveal { opacity: 0; transform: translateY(22px); transition: opacity 650ms ease, transform 650ms cubic-bezier(.2,.75,.3,1); }
 .js-enabled .reveal.is-visible { opacity: 1; transform: translateY(0); }
 .feature-card:nth-child(2) { transition-delay: 90ms; }
@@ -637,7 +615,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
   .hero-copy h1 { width: 100%; font-size: clamp(34px, 3vw, 42px); }
   .hero-description { width: min(100%, 560px); }
   .app-preview { left: auto; right: 48px; transform: scale(.88); transform-origin: top right; }
-  .floating-note-es { right: 52px; }
+  .floating-note-question { right: 52px; }
   .floating-note-transcript { left: auto; right: 330px; }
   .hero-orb { right: 0; }
   .hero-accent-disc { right: 280px; }
@@ -662,7 +640,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
   .hero-description { max-width: 640px; }
   .hero-visual { position: relative; inset: auto; width: 100%; height: 570px; margin-top: 20px; }
   .app-preview { top: 72px; right: 50%; transform: translateX(50%) scale(.94); transform-origin: top center; }
-  .floating-note-es { top: 30px; right: max(4px, calc(50% - 330px)); }
+  .floating-note-question { top: 30px; right: max(4px, calc(50% - 330px)); }
   .floating-note-transcript { top: 444px; right: max(4px, calc(50% - 330px)); }
   .hero-orb { top: 4px; right: 50%; transform: translateX(50%); }
   .hero-accent-disc { top: 22px; right: calc(50% - 224px); }
@@ -743,7 +721,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
   .hero-visual { height: 415px; margin-top: 8px; }
   .app-preview { top: 63px; right: 50%; transform: translateX(50%) scale(.66); transform-origin: top center; }
   .floating-note { height: 62px; gap: 7px; padding: 0 9px; }
-  .floating-note-es { top: 24px; right: 0; width: 218px; }
+  .floating-note-question { top: 24px; right: 0; width: 218px; }
   .floating-note-transcript { top: 338px; right: auto; left: 0; width: 242px; }
   .floating-icon { width: 36px; height: 36px; flex-basis: 36px; }
   .floating-copy strong { font-size: 12px; }
@@ -785,7 +763,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
   .secondary-button { width: 100%; flex-basis: 100%; }
   .hero-visual { height: 390px; }
   .app-preview { top: 69px; transform: translateX(50%) scale(.59); }
-  .floating-note-es { top: 27px; right: -4px; }
+  .floating-note-question { top: 27px; right: -4px; }
   .floating-note-transcript { top: 325px; left: -4px; }
   .hero-orb { transform: translateX(50%) scale(.64); }
   .footer-inner p { max-width: 300px; font-size: 12px; }

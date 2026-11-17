@@ -58,36 +58,3 @@ faqDialog?.addEventListener("click", (event) => {
   if (event.target === faqDialog && faqDialog instanceof HTMLDialogElement) faqDialog.close();
 });
 
-let toastTimer;
-function showToast(message) {
-  const toast = document.querySelector(".toast");
-  if (!toast) return;
-  toast.textContent = message;
-  toast.classList.add("is-visible");
-  window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => toast.classList.remove("is-visible"), 4400);
-}
-
-document.querySelectorAll(".download-button, .faq-download").forEach((button) => {
-  button.addEventListener("click", async (event) => {
-    event.preventDefault();
-    const url = button.getAttribute("href");
-    if (!url) return;
-
-    try {
-      const response = await fetch(url, { method: "HEAD", cache: "no-store" });
-      if (!response.ok) {
-        showToast("Windows版インストーラーは現在準備中です。公開後、このボタンから .exe をダウンロードできます。");
-        return;
-      }
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "jobuhan-setup.exe";
-      document.body.append(link);
-      link.click();
-      link.remove();
-    } catch {
-      showToast("ダウンロードを開始できませんでした。時間をおいてもう一度お試しください。");
-    }
-  });
-});
