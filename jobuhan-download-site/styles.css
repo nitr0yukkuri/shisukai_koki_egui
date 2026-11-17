@@ -639,7 +639,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
   .hero-copy h1 { max-width: 680px; font-size: clamp(38px, 5vw, 54px); }
   .hero-description { max-width: 640px; }
   .hero-visual { position: relative; inset: auto; width: 100%; height: 570px; margin-top: 20px; }
-  .app-preview { top: 72px; right: 50%; transform: translateX(50%) scale(.94); transform-origin: top center; }
+  .app-preview { top: 72px; right: 50%; left: auto; transform: translateX(50%) scale(.94); transform-origin: top center; }
   .floating-note-question { top: 30px; right: max(4px, calc(50% - 330px)); }
   .floating-note-transcript { top: 444px; right: max(4px, calc(50% - 330px)); }
   .hero-orb { top: 4px; right: 50%; transform: translateX(50%); }
