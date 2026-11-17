@@ -2,6 +2,10 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { app, BrowserWindow, ipcMain } = require("electron");
 
+if (require("electron-squirrel-startup")) return;
+
+app.setAppUserModelId("com.squirrel.jobuhan.jobuhan");
+
 let mainWindow;
 let backendHandle;
 

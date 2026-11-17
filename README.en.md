@@ -123,6 +123,11 @@ Use Node.js 24 and npm. Install dependencies once, then use the npm scripts to l
     npm run typecheck
     npm run build:main
     npm run build
+    npm run make
     npm run check
 
 `npm run dev` starts the Vite Renderer and Electron together. `npm run start` builds the Renderer and then launches the desktop app. `npm run build:main` compiles the main process TypeScript into `dist-electron`. `npm run build` builds the main process and the Renderer but does not create a Windows installer.
+
+`npm run make` creates a Squirrel.Windows installer for Windows x64 under `out/make/squirrel.windows`. Pushing a tag such as `v0.1.0` that matches the `package.json` version and points to a commit merged into `main` makes GitHub Actions create a draft Release with the installer and its SHA-256 checksum. Review the draft and publish it on GitHub when it is ready. Published builds are available from [Download the Windows x64 installer](https://github.com/nitr0yukkuri/shisukai_koki_egui/releases/latest/download/Jobuhan-Setup.exe).
+
+The installer is not code-signed yet. Windows SmartScreen may show a warning the first time it runs. Consider code signing before distributing the app to a wider audience.
