@@ -36,4 +36,16 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
+  {
+    files: ["jobuhan-download-site/**/*.js"],
+    languageOptions: {
+      globals: globals.browser,
+    },
+  },
+  {
+    files: ["jobuhan-download-site/server.mjs"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 );
