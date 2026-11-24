@@ -1,7 +1,12 @@
 import { useEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
-export function HintDialog({ close }: { close: () => void }) {
+export function HintDialog({ close, interviewNote, onInterviewNoteChange, storageError }: {
+  close: () => void;
+  interviewNote: string;
+  onInterviewNoteChange: (value: string) => void;
+  storageError: "load" | "save" | null;
+}) {
   const backdropRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -47,9 +52,17 @@ export function HintDialog({ close }: { close: () => void }) {
     }
   };
 
+  const storageMessage = storageError === "load"
+    ? "保存済みメモを読み込めませんでした。入力内容はアプリを開いている間保持されます。"
+    : storageError === "save"
+      ? "メモを端末に保存できませんでした。入力内容はアプリを開いている間は保持されますが、終了すると消える可能性があります。"
+      : "入力したメモはこの端末に保存されます。";
+
   return <div ref={backdropRef} className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><section className="hint-dialog" role="dialog" aria-modal="true" aria-labelledby="hint-title" tabIndex={-1} onKeyDown={handleKeyDown} onMouseDown={(event) => { event.stopPropagation(); if (!(event.target instanceof Element && event.target.closest("button, a[href], input, select, textarea"))) event.currentTarget.focus(); }}>
-    <button ref={closeButtonRef} className="dialog-close" type="button" onClick={close} aria-label="閉じる">×</button><span className="dialog-kicker">話を組み立てるヒント</span><h2 id="hint-title">経験を、自分の言葉で整理する</h2><p>答えを決める必要はありません。話しやすい順番を見つけるための目安です。</p>
-    <ol><li><strong>結論</strong> まず一番伝えたいことを短く話す</li><li><strong>理由</strong> そう考えるようになった背景を添える</li><li><strong>具体例</strong> 自分がしたことや気づきを一つ紹介する</li><li><strong>まとめ</strong> 経験を次にどう活かしたいかにつなげる</li></ol>
+    <button ref={closeButtonRef} className="dialog-close" type="button" onClick={close} aria-label="閉じる">×</button><span className="dialog-kicker">面接前に確認</span><h2 id="hint-title">覚えておきたいこと・ESの要点</h2><p>話す前に確認したいことや、面接で伝えたい内容をまとめておけます。</p>
+    <label className="interview-note-field"><strong>自分が覚えておきたいこと</strong><textarea maxLength={500} rows={4} value={interviewNote} onChange={(event) => onInterviewNoteChange(event.currentTarget.value)} placeholder="例：伝えたい強み、具体的な成果、面接官に聞きたいこと" /></label>
+    <section className="es-extract-panel" aria-labelledby="es-extract-title"><strong id="es-extract-title">ESから抽出した内容</strong><p>ESはまだ登録されていません。登録すると、志望理由や経験などから面接で伝えたい要点を表示します。</p></section>
+    <p className="interview-note-help" role={storageError ? "status" : undefined}>{storageMessage}</p>
     <button className="button button-primary dialog-done" type="button" onClick={close}>練習に戻る</button>
   </section></div>;
 }

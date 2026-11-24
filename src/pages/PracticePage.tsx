@@ -28,7 +28,7 @@ export function PracticePage({ mode, question, setQuestion, answer, setAnswer, f
       </div>
     </section>
     <div className="practice-actions">
-      <button className="action-card" type="button" onClick={hint}><span className="action-icon help-icon">？</span><span><strong>ヒントを見る</strong><small>詰まったときの考え方を整理</small></span></button>
+      <button className="action-card" type="button" onClick={hint}><span className="action-icon help-icon">？</span><span><strong>ヒントを見る</strong><small>覚えておきたいこと・ESの要点</small></span></button>
       <button className="action-card summary-action" type="button" onClick={finish}><span className="action-icon summary-icon"><i /><i /><i /></span><span><strong>振り返りを開く</strong><small>回答内容をあとから確認</small></span></button>
     </div>
     {!isSolo && <p className="privacy-note">このアプリが扱う音声は練習する本人のマイク入力のみです。相手の音声は取得しません。</p>}

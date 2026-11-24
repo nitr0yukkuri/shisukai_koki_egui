@@ -19,6 +19,10 @@ function App() {
   const screen = currentRoute.screen;
   const [notice, setNotice] = useState("");
   const [showHint, setShowHint] = useState(false);
+  const [interviewNote, setInterviewNote] = useState<{ value: string; storageError: "load" | "save" | null }>(() => {
+    try { return { value: window.localStorage.getItem("jobuhan:interview-note") ?? "", storageError: null }; }
+    catch { return { value: "", storageError: "load" }; }
+  });
   const [question, setQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<Mode, Record<number, string>>>({ solo: { 0: sampleAnswer }, partner: { 0: sampleAnswer } });
   const [newest, setNewest] = useState(true);
@@ -28,6 +32,14 @@ function App() {
   const [showProfile, setShowProfile] = useState(false);
   const notify = (message: string) => setNotice(message);
   const toggleNotification = (index: number) => setNotifications((current) => current.map((value, item) => item === index ? !value : value));
+  const updateInterviewNote = (value: string) => {
+    try {
+      window.localStorage.setItem("jobuhan:interview-note", value);
+      setInterviewNote({ value, storageError: null });
+    } catch {
+      setInterviewNote({ value, storageError: "save" });
+    }
+  };
   useEffect(() => {
     try {
       window.localStorage.setItem("jobuhan:accent", accent);
@@ -99,7 +111,7 @@ function App() {
       </main>
     </div>
     {notice && <div className="status-toast" role="status"><span>{notice}</span><button type="button" aria-label="閉じる" onClick={() => setNotice("")}>×</button></div>}
-    {showHint && <HintDialog close={() => setShowHint(false)} />}
+    {showHint && <HintDialog close={() => setShowHint(false)} interviewNote={interviewNote.value} onInterviewNoteChange={updateInterviewNote} storageError={interviewNote.storageError} />}
     {showProfile && <ProfileDialog profile={profile} save={(nextProfile) => { setProfile(nextProfile); setShowProfile(false); }} close={() => setShowProfile(false)} />}
   </div>;
 }
