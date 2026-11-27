@@ -1,8 +1,9 @@
 import { reportRows, reportTabs } from "../app/data";
 import type { LogEntry, ReportTab } from "../app/types";
-import { Image } from "../components/Image";
 
 export function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: ReportTab; setTab: (value: ReportTab) => void }) {
+  const score = Math.max(0, Math.min(100, entry.score));
+  const scoreCircumference = 2 * Math.PI * 51.5;
   const rows = tab === "transcript"
     ? [{ time: "回答", text: entry.answer || "回答内容はありません。" }]
     : reportRows[tab];
@@ -10,7 +11,7 @@ export function ReportPage({ entry, tab, setTab }: { entry: LogEntry; tab: Repor
     <header className="page-heading report-heading"><div><h1>振り返りレポート</h1><p>練習ログを見返して、次の面接に活かしましょう。</p></div>
       <div className="report-date"><span>{entry.date}</span><span>{entry.mode === "solo" ? "一人で練習" : "練習相手：" + entry.partner}</span></div></header>
     <div className="report-top-grid">
-      <article className="report-card overall-card"><h2>総合スコア（サンプル）</h2><div className="score-ring"><Image name="report-score-ring.svg" /><strong>{entry.score}</strong><small>/ 100</small></div><div className="overall-message"><strong>よくできています！</strong><p>話した内容を振り返るための参考情報です。</p></div></article>
+      <article className="report-card overall-card"><h2>総合スコア（サンプル）</h2><div className="score-ring" role="img" aria-label={`スコア ${score}点 / 100点`}><svg viewBox="0 0 112 112" aria-hidden="true"><circle className="score-ring-background" cx="56" cy="56" r="56" /><circle className="score-ring-track" cx="56" cy="56" r="51.5" /><circle className="score-ring-progress" cx="56" cy="56" r="51.5" strokeDasharray={scoreCircumference} strokeDashoffset={scoreCircumference * (1 - score / 100)} transform="rotate(-90 56 56)" /></svg><strong>{score}</strong><small>/ 100</small></div><div className="overall-message"><strong>よくできています！</strong><p>話した内容を振り返るための参考情報です。</p></div></article>
       <article className="report-card breakdown-card"><h2>振り返りの内訳（参考）</h2>
         {[["結論の明確さ", 16], ["具体例の充実度", 15], ["話し方", 12], ["伝えた内容", 17], ["質問への答え方", 18]].map(([label, value], index) => <div className="breakdown-row" key={label}><span>{label}</span><span className="breakdown-track"><i className={index === 2 ? "amber" : ""} style={{ width: (Number(value) / 20) * 100 + "%" }} /></span><strong>{value}</strong></div>)}
       </article>

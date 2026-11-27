@@ -208,7 +208,10 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid #79c79a; outli
 .overall-card, .breakdown-card { height: 184px; padding: 13px 17px; }
 .overall-card { position: relative; }
 .score-ring { position: absolute; top: 50px; left: 23px; display: grid; width: 112px; height: 112px; place-items: center; }
-.score-ring img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.score-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.score-ring-background { fill: var(--sage); }
+.score-ring-track { fill: none; stroke: color-mix(in srgb, var(--accent) 18%, white); stroke-width: 9; }
+.score-ring-progress { fill: none; stroke: var(--accent); stroke-width: 9; stroke-linecap: round; }
 .score-ring strong { z-index: 1; margin-top: -10px; color: #18392c; font-size: 28px; }
 .score-ring small { position: absolute; bottom: 21px; z-index: 1; color: #607668; font-size: 10px; }
 .overall-message { position: absolute; top: 66px; right: 16px; left: 163px; }
@@ -518,4 +521,35 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid #79c79a; outli
   .hint-dialog, .profile-dialog { padding: 24px 18px; }
   .hint-dialog h2, .profile-dialog h2 { font-size: 20px; }
   .status-toast { right: 10px; bottom: 78px; left: 10px; max-width: none; gap: 10px; font-size: 13px; }
+}
+
+/* Keep the partner consent flow and recording controls inside the available practice layout. */
+.practice-view-partner { display: flex; flex-direction: column; min-height: 100%; }
+.practice-view-partner .practice-heading { flex: 0 0 72px; height: auto; }
+.practice-view-partner .partner-practice-canvas { flex: 0 0 auto; height: auto; min-height: 0; padding: 10px; }
+.practice-view-partner .rtc-video-grid { gap: 8px; margin: 0 0 8px; }
+.practice-view-partner .host-rtc-panel .rtc-video-card,
+.practice-view-partner .host-rtc-panel .rtc-video-card video { min-height: 150px; }
+.practice-view-partner .rtc-consent-box { gap: 7px; margin-top: 8px; padding: 10px 12px; }
+.practice-view-partner .transcript-card { display: flex; height: auto; min-height: 0; flex: 0 0 auto; flex-direction: column; }
+.practice-view-partner .transcript-panel { height: clamp(96px, 14vh, 130px); flex: 0 0 auto; }
+.practice-view-partner .practice-controls { height: 44px; margin-top: 10px; flex: 0 0 auto; }
+.practice-view-partner .control-button { height: 44px; }
+
+@media (max-height: 860px) {
+  .practice-view-partner .practice-heading { flex-basis: 68px; }
+  .practice-view-partner .host-rtc-panel .rtc-video-card,
+  .practice-view-partner .host-rtc-panel .rtc-video-card video { min-height: 130px; }
+  .practice-view-partner .rtc-consent-box { gap: 6px; padding: 8px 10px; }
+  .practice-view-partner .transcript-header { margin-bottom: 6px; }
+  .practice-view-partner .transcript-panel { height: 88px; }
+  .practice-view-partner .transcript-live-meta { min-height: 12px; margin-top: 2px; }
+  .practice-view-partner .practice-controls { height: 40px; margin-top: 8px; }
+  .practice-view-partner .control-button { height: 40px; }
+}
+
+@media (max-height: 780px) {
+  .practice-view-partner .host-rtc-panel .rtc-video-card,
+  .practice-view-partner .host-rtc-panel .rtc-video-card video { min-height: 110px; }
+  .practice-view-partner .transcript-panel { height: 72px; }
 }

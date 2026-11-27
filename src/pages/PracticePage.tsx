@@ -207,7 +207,7 @@ export function PracticePage({ mode, question, setQuestion, setAnswer, finish, h
 
   const currentQuestion = prompt?.question.text ?? questions[question % questions.length];
   const displayTranscript = transcript + partial;
-  return <section className="practice-view">
+  return <section className={"practice-view" + (isSolo ? "" : " practice-view-partner")}>
     <header className="page-heading practice-heading"><h1>{isSolo ? "一人で面接練習" : "誰かと面接練習"}</h1>
       <p>{isSolo ? "質問カードを見ながら答えてみましょう。回答は練習ログに保存されます。" : "面接相手と対話しながら練習しましょう。"}</p>
     </header>
