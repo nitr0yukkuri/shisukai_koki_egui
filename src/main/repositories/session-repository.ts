@@ -218,10 +218,25 @@ export class SessionRepository {
     );
   }
 
-  /** 同じ回答をやり直したときに、前の記録を消す。 */
+  /**
+   * 同じ回答をやり直したときに、前の記録を消す。
+   * 消すのは利用者の発話だけ。1on1で先に入れた相手の発言(EX-02)は残す。
+   * 言い淀みは利用者の回答からしか出ないので、そのまま全部消してよい。
+   */
   clearTurnRecords(turnId: number): void {
-    this.database.run("DELETE FROM utterances WHERE turn_id = $turnId", { turnId });
+    this.database.run("DELETE FROM utterances WHERE turn_id = $turnId AND speaker = 'user'", {
+      turnId,
+    });
     this.database.run("DELETE FROM filler_events WHERE turn_id = $turnId", { turnId });
+  }
+
+  /** そのターンに残っている発話の数。相手の発言のあとに続けて入れるとき、順番の採番に使う。 */
+  countUtterances(turnId: number): number {
+    const row = this.database.get<{ count: number }>(
+      "SELECT COUNT(*) AS count FROM utterances WHERE turn_id = $turnId",
+      { turnId },
+    );
+    return row?.count ?? 0;
   }
 
   findTurn(turnId: number): TurnRow | undefined {

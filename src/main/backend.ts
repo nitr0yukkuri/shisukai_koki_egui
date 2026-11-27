@@ -13,6 +13,8 @@ import { HistoryService } from "./services/history-service.ts";
 import { PracticeSessionService } from "./services/practice-session-service.ts";
 import { QuestionService } from "./services/question-service.ts";
 import { SettingsService } from "./services/settings-service.ts";
+import { FakeLlmClient } from "./llm/fake-llm-client.ts";
+import type { LlmClient } from "./llm/llm-client.ts";
 import { FakeSpeechRecognizer } from "./speech/fake-speech-recognizer.ts";
 import type { SpeechRecognizer } from "./speech/speech-recognizer.ts";
 import { SpeechService, type SpeechNotifier } from "./speech/speech-service.ts";
@@ -24,6 +26,11 @@ export type Backend = {
   history: HistoryService;
   settings: SettingsService;
   speech: SpeechService;
+  /**
+   * 生成AI。お助け(FR-19〜21)と評価(FR-22〜26)で使う。
+   * それらのサービスはまだ作っていないので、いまは口を用意しているだけ。
+   */
+  llm: LlmClient;
   /** 画面が用意できたあとに、通知の送り先を差し替える。 */
   setSpeechNotifier: (notifier: SpeechNotifier) => void;
   close: () => void;
@@ -37,6 +44,11 @@ export type CreateBackendOptions = {
    * U-06 が決まったら、ここに実サービスのアダプターを渡す。
    */
   recognizer?: SpeechRecognizer;
+  /**
+   * 生成AIの実装。既定は固定のJSONを返す Fake(内部設計書 §7.4)。
+   * U-07 が決まったら GeminiLlmClient を渡す。
+   */
+  llm?: LlmClient;
   notifier?: SpeechNotifier;
   now?: () => string;
 };
@@ -74,6 +86,7 @@ export function createBackend(options: CreateBackendOptions): Backend {
     history: new HistoryService(sessionRepository),
     settings: new SettingsService(settingsRepository, options.now),
     speech,
+    llm: options.llm ?? new FakeLlmClient(),
     setSpeechNotifier: (notifier) => speech.setNotifier(notifier),
     close: () => {
       speech.abortTurn();

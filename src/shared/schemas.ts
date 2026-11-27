@@ -9,6 +9,7 @@ import {
   ES_BODY_HARD_LIMIT,
   ES_KINDS,
   ES_NAME_MAX_LENGTH,
+  PARTNER_TEXT_MAX_LENGTH,
   PRACTICE_MODES,
   QUESTION_COUNT_DEFAULT,
   QUESTION_COUNT_MAX,
@@ -50,6 +51,25 @@ export const sessionIdSchema = z.object({ sessionId: id });
 
 export const turnRefSchema = z.object({ sessionId: id, turnId: id });
 
+/**
+ * 1on1で相手が出した質問(EX-01)。
+ * 相手の音声の取り込み方(U-09)は未決なので、処理側は文字になったものを受け取る。
+ */
+export const partnerQuestionSchema = z.object({
+  sessionId: id,
+  questionText: z.string().trim().min(1).max(PARTNER_TEXT_MAX_LENGTH),
+});
+
+/** 1on1で相手の発言を会話ログに残す(EX-02)。 */
+export const partnerSpeechSchema = z.object({
+  sessionId: id,
+  turnId: id,
+  text: z.string().trim().min(1).max(PARTNER_TEXT_MAX_LENGTH),
+  /** 回答開始からの時刻。分からないときは null。 */
+  startMs: z.number().int().min(0).nullable().default(null),
+  endMs: z.number().int().min(0).nullable().default(null),
+});
+
 export const practiceFinishSchema = z.object({ sessionId: id, keep: z.boolean().default(true) });
 
 const settingsKey = z.enum([
@@ -87,6 +107,8 @@ export type EsSetSaveInput = z.infer<typeof esSetInputSchema>;
 export type PracticeStartInput = z.infer<typeof practiceStartSchema>;
 export type SessionIdInput = z.infer<typeof sessionIdSchema>;
 export type TurnRefInput = z.infer<typeof turnRefSchema>;
+export type PartnerQuestionInput = z.infer<typeof partnerQuestionSchema>;
+export type PartnerSpeechInput = z.infer<typeof partnerSpeechSchema>;
 export type PracticeFinishInput = z.infer<typeof practiceFinishSchema>;
 export type SettingsKeyInput = z.infer<typeof settingsKeySchema>;
 export type SettingsSetInput = z.infer<typeof settingsSetSchema>;

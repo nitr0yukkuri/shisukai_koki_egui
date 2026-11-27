@@ -12,6 +12,8 @@ import type {
   EsSetInput,
   EsSetSummary,
   MetricsUpdateEvent,
+  PartnerQuestionStarted,
+  PartnerSpeechRecorded,
   PracticeNextResult,
   PracticeStarted,
   SessionDetail,
@@ -53,6 +55,22 @@ export type JobuhanBridge = {
     endAnswer: (sessionId: number, turnId: number) => Promise<IpcResult<TurnRecord>>;
     next: (sessionId: number) => Promise<IpcResult<PracticeNextResult>>;
     finish: (sessionId: number, keep: boolean) => Promise<IpcResult<null>>;
+    /**
+     * 1on1: 相手が出した質問を登録してターンを作る(EX-01)。
+     * 相手の音声の取り込み方(U-09)は未決なので、文字になったものを渡す。
+     */
+    partnerQuestion: (
+      sessionId: number,
+      questionText: string,
+    ) => Promise<IpcResult<PartnerQuestionStarted>>;
+    /** 1on1: 相手の発言を会話ログに残す(EX-02)。 */
+    partnerSpeech: (input: {
+      sessionId: number;
+      turnId: number;
+      text: string;
+      startMs?: number | null;
+      endMs?: number | null;
+    }) => Promise<IpcResult<PartnerSpeechRecorded>>;
   };
   history: {
     list: () => Promise<IpcResult<SessionSummary[]>>;

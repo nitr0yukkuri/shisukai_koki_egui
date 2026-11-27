@@ -176,8 +176,35 @@ export type PracticePrompt = {
 
 export type PracticeStarted = {
   sessionId: number;
-  prompt: PracticePrompt;
+  /**
+   * 最初の質問。
+   * 1人モードでは質問バンクから選んだものが入る。
+   * 1on1モードでは質問を出すのは相手(人)なので null になり、
+   * practice:partnerQuestion で相手の質問を登録したときに最初のターンができる(EX-01)。
+   */
+  prompt: PracticePrompt | null;
 };
+
+/** 1on1で相手が出した質問。質問バンクを使わないので QuestionSummary は持たない。 */
+export type PartnerQuestionStarted = {
+  turnId: number;
+  seq: number;
+  questionText: string;
+};
+
+/** 1on1で会話ログに残した相手の発言(EX-02)。 */
+export type PartnerSpeechRecorded = {
+  turnId: number;
+  utteranceId: number;
+  seq: number;
+};
+
+/**
+ * 相手の質問・発言として受け取るテキストの上限。
+ * 1on1では相手の音声をどう取り込むか(U-09)が未決なので、処理側は
+ * 「すでに文字になったもの」を受け取る。取り込み方が決まっても、ここは変えずに済む。
+ */
+export const PARTNER_TEXT_MAX_LENGTH = 2000;
 
 export type PracticeNextResult =
   | { done: false; prompt: PracticePrompt }
