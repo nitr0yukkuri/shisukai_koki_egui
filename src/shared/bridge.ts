@@ -34,6 +34,7 @@ export type JobuhanBridge = {
     minimize: () => Promise<void>;
     toggleMaximize: () => Promise<void>;
     close: () => Promise<void>;
+    openJoin: () => Promise<void>;
   };
   es: {
     list: () => Promise<IpcResult<EsSetSummary[]>>;

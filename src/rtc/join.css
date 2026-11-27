@@ -1,0 +1,65 @@
+.join-window { min-height: 100vh; background: #f7f7e9; color: #18392c; }
+html:has(.join-window), body:has(.join-window), #root:has(.join-window) { min-width: 0; min-height: 0; }
+body:has(.join-window) { overflow: hidden; }
+.join-topbar { display: flex; height: 54px; align-items: center; justify-content: space-between; background: white; border-bottom: 1px solid #d8e5d1; }
+.join-brand { display: flex; align-items: center; gap: 9px; padding-left: 18px; color: #0d3f35; }
+.join-brand img { width: 23px; height: 23px; object-fit: contain; }
+.join-brand strong { font-size: 17px; }
+.join-brand span { margin-left: 10px; padding-left: 14px; border-left: 1px solid #c8d9cf; color: #607668; font-size: 12px; }
+.join-window-controls { display: flex; height: 100%; }
+.join-window-controls button { display: grid; width: 48px; place-items: center; border: 0; background: white; }
+.join-window-controls button:hover { background: #edf4ef; }
+.join-window-controls img { width: 17px; height: 17px; }
+.join-content { max-width: 1320px; margin: auto; padding: 22px 28px 32px; }
+.join-heading > span { color: var(--accent); font-size: 12px; font-weight: 700; }
+.join-heading h1 { margin: 5px 0; font-size: 26px; }
+.join-heading p { margin: 0; color: #607668; }
+.join-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, .8fr); gap: 18px; margin-top: 20px; align-items: start; }
+.join-connection-card, .join-question-card { padding: 18px; border: 1px solid var(--border); border-radius: 16px; background: white; }
+.join-card-heading, .rtc-panel-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.join-card-heading > div { display: grid; gap: 3px; }
+.join-card-heading small, .join-question-card > small { color: var(--accent); font-size: 12px; font-weight: 700; }
+.join-card-heading strong { font-size: 15px; }
+.rtc-status { padding: 5px 9px; border-radius: 18px; background: #eff4ef; color: #607668; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.rtc-status-connected { background: #e5f4e9; color: #176c48; }
+.rtc-status-failed, .rtc-status-disconnected { background: #fff0ef; color: #b64740; }
+.rtc-video-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
+.rtc-video-card { position: relative; min-width: 0; min-height: 190px; overflow: hidden; border-radius: 12px; background: #c9d0d9; }
+.rtc-video-card video { display: block; width: 100%; height: 100%; min-height: 190px; object-fit: cover; }
+.rtc-video-placeholder { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 7px; padding: 16px; color: #536274; text-align: center; }
+.rtc-video-placeholder > span { font-size: 17px; font-weight: 700; }
+.rtc-video-placeholder small { font-size: 11px; }
+.rtc-video-label { position: absolute; bottom: 8px; left: 8px; padding: 4px 8px; border-radius: 20px; background: rgb(13 63 53 / 82%); color: white; font-size: 11px; }
+.rtc-consent-box, .join-consent-box, .join-answer-box { display: grid; gap: 10px; margin-top: 12px; padding: 14px; border-radius: 12px; background: #f2f7f1; }
+.rtc-consent-box > strong, .join-consent-box > strong, .join-answer-box > strong { color: #18392c; font-size: 14px; }
+.rtc-consent-box label, .join-consent-box label { display: flex; align-items: center; gap: 8px; color: #244b3d; font-size: 12px; }
+.rtc-consent-box input, .join-consent-box input { accent-color: var(--accent); }
+.rtc-consent-box p, .join-consent-box p, .join-answer-box p { margin: 0; color: #607668; font-size: 11px; line-height: 1.5; }
+.rtc-signaling-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.rtc-signaling-grid label, .join-code-field { display: grid; gap: 5px; }
+.rtc-signaling-grid label strong, .join-code-field strong { font-size: 12px; }
+.rtc-signaling-grid label small { color: #607668; font-size: 10px; }
+.rtc-signaling-grid textarea, .join-code-field textarea, .join-answer-box textarea { width: 100%; min-height: 84px; padding: 8px; resize: vertical; border: 1px solid var(--border); border-radius: 8px; background: white; color: #18392c; font: 10px/1.45 ui-monospace, monospace; }
+.rtc-signaling-actions { display: flex; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; }
+.rtc-signaling-actions .button, .rtc-consent-box .button, .join-consent-box .button, .join-answer-box .button { min-height: 40px; height: auto; }
+.host-rtc-panel { width: 100%; }
+.rtc-panel-heading { margin-bottom: 10px; }
+.rtc-panel-heading strong { font-size: 14px; }
+.rtc-panel-heading p { margin: 4px 0 0; color: #607668; font-size: 11px; }
+.host-rtc-panel .rtc-video-card, .host-rtc-panel .rtc-video-card video { min-height: 210px; }
+.host-connected-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.partner-question, .acknowledgement-status { display: grid; gap: 3px; min-width: 140px; flex: 1; }
+.partner-question small, .acknowledgement-status span { color: #607668; font-size: 10px; }
+.partner-question strong, .acknowledgement-status strong { font-size: 12px; }
+.host-rtc-panel > .button { min-height: 36px; height: 36px; margin-top: 10px; }
+.join-question-card { min-height: 220px; }
+.join-question-card h2 { min-height: 100px; margin: 12px 0; font-size: 21px; line-height: 1.55; }
+.join-ack-actions { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.join-ack-actions span { width: 100%; color: #607668; font-size: 11px; }
+.join-ack-actions button { min-height: 38px; padding: 0 12px; border: 1px solid var(--accent-border); border-radius: 8px; background: white; color: var(--accent); font-weight: 700; }
+.join-ack-actions button:not(:disabled):hover { background: var(--accent-soft); }
+.join-ack-actions button:disabled { cursor: not-allowed; opacity: .5; }
+.join-notice { color: var(--accent); font-size: 12px; }
+.rtc-error { color: #b64740; font-size: 12px; }
+@media (max-width: 820px) { .join-layout { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .join-content { padding: 16px 12px 24px; } .rtc-video-grid { grid-template-columns: 1fr; } .rtc-video-card, .rtc-video-card video { min-height: 210px; } .rtc-signaling-grid { grid-template-columns: 1fr; } .join-question-card h2 { min-height: 0; } }

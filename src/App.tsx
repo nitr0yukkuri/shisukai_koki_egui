@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
-import { logs, questions, sampleAnswer } from "./app/data";
+import { logs, questions } from "./app/data";
 import { readStoredAccent, readStoredNotifications, readStoredProfile } from "./app/storage";
 import type { LogEntry, Mode, NavigationEntry, NavScreen, ReportTab, Screen } from "./app/types";
 import { HintDialog } from "./dialogs/HintDialog";
@@ -24,13 +24,13 @@ function App() {
     catch { return { value: "", storageError: "load" }; }
   });
   const [question, setQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<Mode, Record<number, string>>>({ solo: { 0: sampleAnswer }, partner: { 0: sampleAnswer } });
+  const [answers, setAnswers] = useState<Record<Mode, Record<number, string>>>({ solo: {}, partner: {} });
   const [newest, setNewest] = useState(true);
   const [accent, setAccent] = useState(readStoredAccent);
   const [notifications, setNotifications] = useState(readStoredNotifications);
   const [profile, setProfile] = useState(readStoredProfile);
   const [showProfile, setShowProfile] = useState(false);
-  const notify = (message: string) => setNotice(message);
+  const notify = useCallback((message: string) => setNotice(message), []);
   const toggleNotification = (index: number) => setNotifications((current) => current.map((value, item) => item === index ? !value : value));
   const updateInterviewNote = (value: string) => {
     try {
@@ -104,7 +104,7 @@ function App() {
     <Sidebar screen={screen} onNavigate={navigate} /><div className="app-main"><TopBar title={titles[screen]} canGoBack={navigation.position > 0} canGoForward={navigation.position < navigation.entries.length - 1} goBack={() => moveNavigation(-1)} goForward={() => moveNavigation(1)} />
       <main className={"app-content screen-" + screen}>
         {screen === "home" && <HomePage go={navigate} notify={notify} />}
-        {(screen === "solo" || screen === "partner") && <PracticePage mode={screen} question={question} setQuestion={setQuestion} answer={answers[screen][question] ?? ""} setAnswer={(value) => setAnswers((current) => ({ ...current, [screen]: { ...current[screen], [question]: value } }))} finish={finish} hint={() => setShowHint(true)} notify={notify} />}
+        {(screen === "solo" || screen === "partner") && <PracticePage mode={screen} question={question} setQuestion={setQuestion} setAnswer={(value) => setAnswers((current) => ({ ...current, [screen]: { ...current[screen], [question]: value } }))} finish={finish} hint={() => setShowHint(true)} notify={notify} />}
         {screen === "history" && <HistoryPage newest={newest} setNewest={setNewest} open={openReport} />}
         {screen === "report" && <ReportPage entry={currentRoute.report?.entry ?? logs[0]} tab={currentRoute.report?.tab ?? "points"} setTab={setReportTab} />}
         {screen === "settings" && <SettingsPage accent={accent} setAccent={setAccent} notifications={notifications} toggleNotification={toggleNotification} profile={profile} editProfile={() => setShowProfile(true)} notify={notify} />}

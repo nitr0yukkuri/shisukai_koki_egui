@@ -143,6 +143,19 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid #79c79a; outli
 .summary-icon i { width: 18px; height: 2px; border-radius: 1px; background: var(--accent); }
 .summary-icon i:nth-child(2) { width: 13px; }
 .privacy-note { position: absolute; right: 28px; bottom: 1px; left: 28px; margin: 0; color: #607668; font-size: 10px; text-align: center; }
+.solo-interviewer { background: radial-gradient(circle at 50% 45%, #f6faf6 0, #dcebe0 60%, #d1e4d6 100%); }
+.solo-interviewer .question-card { max-width: min(520px, 58%); }
+.interviewer-avatar { width: min(245px, 36%); max-height: 90%; object-fit: contain; filter: drop-shadow(0 12px 16px rgb(13 63 53 / 12%)); }
+.partner-practice-canvas { height: auto; min-height: 430px; padding: 16px; background: #eaf2e6; }
+.partner-practice-canvas .host-rtc-panel { min-width: 0; }
+.partner-practice-canvas .rtc-video-grid { margin-top: 10px; }
+.transcript-live-meta { display: flex; min-height: 16px; justify-content: flex-end; gap: 14px; margin-top: 4px; color: #607668; font-size: 10px; }
+.status-dot.is-recording { background: #d64f4f; animation: recording-pulse 1.2s ease-in-out infinite; }
+.status-dot.is-idle { background: #aab7af; }
+.recording-stop { background: #a43f3b; border-color: #a43f3b; }
+.control-button:disabled { cursor: default; opacity: .55; }
+.summary-action:disabled { cursor: default; opacity: .6; }
+@keyframes recording-pulse { 50% { box-shadow: 0 0 0 5px rgb(214 79 79 / 13%); } }
 
 /* History */
 .history-view { min-width: 920px; min-height: 100%; padding: 18px 28px 28px; }
@@ -459,6 +472,9 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid #79c79a; outli
   .page-heading p { font-size: 13px; }
   .practice-heading { height: auto; min-height: 78px; }
   .practice-canvas { height: clamp(210px, 35vh, 300px); margin-top: 8px; }
+  .partner-practice-canvas { height: auto; min-height: 0; }
+  .interviewer-avatar { width: min(180px, 38%); }
+  .solo-interviewer .question-card { max-width: min(520px, 68%); }
   .transcript-card { height: auto; margin-top: 12px; padding: 12px; }
   .transcript-header { gap: 8px; }
   .transcript-title h2 { font-size: 13px; }

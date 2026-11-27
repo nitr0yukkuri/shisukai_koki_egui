@@ -2,7 +2,7 @@
 
 Support for turning what you said in an interview or meeting into a useful review for next time.
 
-Jobhan is a Windows desktop app intended to support interview and meeting practice and reflection. Its purpose is not to have AI replace an interviewer by asking questions or evaluating a candidate. Instead, it aims to record and organize the user's own speech so they can review what they communicated and how they spoke. The initial focus is solo practice; post-session reflection with another person is a possible future direction.
+Jobhan is a Windows desktop app intended to support interview and meeting practice and reflection. Its purpose is not to have AI replace an interviewer by asking questions or evaluating a candidate. Instead, it aims to record and organize the user's own speech so they can review what they communicated and how they spoke. It supports both solo practice and a one-on-one connection screen.
 
 A resume or entry sheet (ES) may be provided at the user's choice as context for understanding their experience and career goals. It is intended to make summaries and feedback about the user's speech more specific, not to make AI act as an interviewer.
 
@@ -28,9 +28,9 @@ Answer question cards or questions prepared by the user. Questions are prompts t
 
 ### Practice with another person
 
-Practice one-on-one using Zoom or a similar tool with a career-center counselor, friend, or other partner. In the initial version, the other person does not need to install Jobhan. The app is intended to process only the practicing user's microphone input; it does not capture or record the other person's audio.
+The partner opens Jobhan's interview-partner screen. The two people exchange an invitation code and an answer code manually. After both consent to sharing their camera and microphone, WebRTC sends audio and video to each other in real time. Questions and acknowledgements are shared during the session. Some network configurations may prevent a direct connection.
 
-Accordingly, initial session records are centered on the questions and the user's answers or speech. A conversation log containing both participants' speech is a possible future feature, subject to designing consent and data handling with the other participant.
+Audio and video files are not saved. The practicing user's microphone input is passed to speech processing on their device; its transcript and speaking metrics are saved in the practice log. The partner's audio is not transcribed or saved.
 
 ### Gradually reduce practice support
 
@@ -44,6 +44,7 @@ Accordingly, initial session records are centered on the questions and the user'
 
 - Solo interview practice using question cards.
 - Transcription of the user's microphone audio, with a way to check and correct recognition results.
+- One-on-one practice that shares audio and video with the partner after consent.
 - Optional hints when the user gets stuck.
 - Local session-log storage, search, editing, and deletion.
 - Adjustable hint levels and post-practice reflection.
@@ -68,8 +69,9 @@ The interface should make it easy to continue practicing and find the informatio
 
 ## Practice logs and privacy
 
-- The initial direction is to handle only the user's microphone audio and not capture the other participant's voice.
-- Audio processing and log storage are planned to take place on the user's device. The recognition and storage approaches still require technical evaluation.
+- One-on-one sessions send audio and video to the partner in real time after consent, but do not save media files.
+- The practicing user's microphone audio is sent to on-device speech processing; transcripts and metrics are saved in the local SQLite database.
+- Invitation codes contain network connection information. Share them only with the intended partner.
 - The app must clearly distinguish whether it stores audio or only transcripts, and allow users to delete logs.
 - Before sending resumes, ES documents, or answers to an external service for an AI feature, the app should show what will be sent and where.
 - When practicing with another person, tell them about the app and its audio handling in advance.
@@ -109,7 +111,7 @@ Older documents and ADRs that assume a Zoom overlay or Supabase do not define th
 
 A minimal Node.js development setup is available that launches Electron Main / Preload and a React + TypeScript Renderer.
 
-The main process now saves practice logs to an on-device SQLite database and calculates speaking rate and filler counts from speech recognition results. Speech recognition itself sits behind a replaceable adapter, and only a development fake that returns a fixed transcript is included so far. Microphone recording in the Renderer, a real speech recognition service, and AI-assisted reflection have not been implemented yet.
+The main process saves practice logs to an on-device SQLite database and calculates speaking rate and filler counts from speech recognition results. The Renderer records audio chunks and displays partial and final transcript events. Speech recognition itself sits behind a replaceable adapter, and only a development fake that returns a fixed transcript is included so far. One-on-one practice uses a manually exchanged WebRTC connection code, an interview-partner screen, video, acknowledgements, and consent prompts. A real speech recognition service and AI-assisted reflection have not been implemented yet.
 
 ## Development commands
 
