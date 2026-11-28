@@ -43,19 +43,21 @@ function createWindow(isJoin = false) {
 
   const route = isJoin ? "/join.html" : "/";
   const trustedFileUrl = pathToFileURL(entryPath);
-  const isTrustedDestination = (url) => {
-    try {
-      const destination = new URL(url);
-      if (devServerUrl) return destination.origin === new URL(devServerUrl).origin && destination.pathname === route;
-      destination.search = "";
-      destination.hash = "";
-      return destination.href === trustedFileUrl.href;
-    } catch { return false; }
-  };
-
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event) => {
-    if (!isTrustedDestination(event.url)) event.preventDefault();
+    try {
+      const destination = new URL(event.url);
+      if (trustedDevUrl) {
+        if (destination.origin === trustedDevUrl.origin && destination.pathname === route) return;
+      } else {
+        destination.search = "";
+        destination.hash = "";
+        if (destination.href === trustedFileUrl.href) return;
+      }
+    } catch {
+      // Block malformed and non-URL navigation attempts.
+    }
+    event.preventDefault();
   });
 
   const pageLoad = devServerUrl
