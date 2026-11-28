@@ -93,8 +93,12 @@ function mayUseMedia(contents, permission, details) {
 }
 
 function getTrustedWindow(event) {
-  const window = [mainWindow, joinWindow].find((candidate) => candidate && !candidate.isDestroyed() && event.sender === candidate.webContents && event.senderFrame === candidate.webContents.mainFrame);
-  return window ?? null;
+  if (mainWindow && !mainWindow.isDestroyed() && event.sender === mainWindow.webContents) {
+    if (event.senderFrame !== mainWindow.webContents.mainFrame) return null;
+    return mainWindow;
+  }
+  if (!joinWindow || joinWindow.isDestroyed() || event.sender !== joinWindow.webContents || event.senderFrame !== joinWindow.webContents.mainFrame) return null;
+  return joinWindow;
 }
 
 function openJoinWindow(event) {
