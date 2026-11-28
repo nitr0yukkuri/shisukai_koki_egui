@@ -29,9 +29,9 @@ export function useAudioCapture() {
       });
     } catch (error) {
       const name = error instanceof DOMException ? error.name : "";
-      if (name === "NotAllowedError" || name === "SecurityError") throw new Error("カメラとマイクの使用が許可されていません。端末の設定を確認してください。");
-      if (name === "NotFoundError" || name === "DevicesNotFoundError") throw new Error("利用できるマイクまたはカメラが見つかりません。");
-      throw new Error("カメラとマイクを起動できませんでした。デバイスの接続を確認してください。");
+      if (name === "NotAllowedError" || name === "SecurityError") throw new Error("カメラとマイクの使用が許可されていません。端末の設定を確認してください。", { cause: error });
+      if (name === "NotFoundError" || name === "DevicesNotFoundError") throw new Error("利用できるマイクまたはカメラが見つかりません。", { cause: error });
+      throw new Error("カメラとマイクを起動できませんでした。デバイスの接続を確認してください。", { cause: error });
     }
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = next;
