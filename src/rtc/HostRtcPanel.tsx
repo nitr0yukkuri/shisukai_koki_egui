@@ -108,17 +108,20 @@ export function HostRtcPanel({ question, questionIndex, stream, acquireMedia, st
   const endCall = async () => {
     peerRef.current?.close();
     peerRef.current = null;
-    await stopRecording();
-    recordingStartedRef.current = false;
-    localStreamRef.current = null;
-    setRemoteStream(null);
-    setOfferCode("");
-    setAnswerCode("");
-    setLastAck("");
-    setStatus("closed");
-    setConsentAudio(false);
-    setConsentVideo(false);
-    releaseMedia();
+    try {
+      await stopRecording();
+    } finally {
+      recordingStartedRef.current = false;
+      localStreamRef.current = null;
+      setRemoteStream(null);
+      setOfferCode("");
+      setAnswerCode("");
+      setLastAck("");
+      setStatus("closed");
+      setConsentAudio(false);
+      setConsentVideo(false);
+      releaseMedia();
+    }
   };
 
   const retryCall = async () => {
