@@ -43,7 +43,10 @@ export default function JoinApp() {
       setLocalStream(local);
       const { session, answerCode: answer } = await InterviewPeer.joinOffer(offerCode, local, {
         onRemoteStream: setRemoteStream,
-        onStatus: setStatus,
+        onStatus: (nextStatus) => {
+          setStatus(nextStatus);
+          if (nextStatus === "failed" || nextStatus === "closed") setRemoteStream(null);
+        },
         onInvalidMessage: () => setError("受け取ったデータの形式を確認できませんでした。"),
         onMessage: (message: RoomMessage) => { if (message.type === "question") setQuestion(message); },
       });

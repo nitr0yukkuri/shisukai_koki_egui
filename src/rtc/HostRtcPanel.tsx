@@ -59,6 +59,7 @@ export function HostRtcPanel({ question, questionIndex, stream, acquireMedia, st
         onRemoteStream: setRemoteStream,
         onStatus: (nextStatus) => {
           setStatus(nextStatus);
+          if (nextStatus === "failed" || nextStatus === "closed") setRemoteStream(null);
           if ((nextStatus === "disconnected" || nextStatus === "failed") && recordingStartedRef.current) {
             recordingStartedRef.current = false;
             void stopRecordingRef.current().finally(() => {
@@ -120,6 +121,16 @@ export function HostRtcPanel({ question, questionIndex, stream, acquireMedia, st
     releaseMedia();
   };
 
+  const retryCall = async () => {
+    setError("");
+    try {
+      await endCall();
+      setStatus("new");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "接続を終了できませんでした。");
+    }
+  };
+
   return <section className="host-rtc-panel" aria-label="面接相手との接続">
     <div className="rtc-panel-heading"><div><strong>面接相手と接続</strong><p>招待コードを交換して接続します。音声・映像は同意後に相手へ送信されます。</p></div><span className={"rtc-status rtc-status-" + status}>{connectionLabels[status]}</span></div>
     <div className="rtc-video-grid">
@@ -129,7 +140,7 @@ export function HostRtcPanel({ question, questionIndex, stream, acquireMedia, st
     {status === "connected" ? <div className="host-connected-tools"><div className="partner-question"><small>相手に表示中の質問</small><strong>{question}</strong></div><div className="acknowledgement-status"><span>相手の相づち</span><strong>{lastAck || "まだありません"}</strong></div><button className="button button-outline" type="button" onClick={() => void endCall()}>接続を終了</button></div> : <>
       {!offerCode && <div className="rtc-consent-box"><strong>開始前に同意してください</strong><label><input type="checkbox" checked={consentVideo} onChange={(event) => setConsentVideo(event.currentTarget.checked)} /> 自分のカメラ映像を面接相手に送信する</label><label><input type="checkbox" checked={consentAudio} onChange={(event) => setConsentAudio(event.currentTarget.checked)} /> 自分のマイク音声を面接相手に送信する</label><p>マイク音声は文字起こしにも使います。音声・映像ファイルは保存しません。</p><button className="button button-primary" type="button" disabled={!consentVideo || !consentAudio || isStarting} onClick={() => void startCall()}>{isStarting ? "準備中…" : "同意して接続コードを作る"}</button></div>}
       {offerCode && <div className="rtc-signaling-grid"><label><strong>1. 招待コード</strong><small>面接相手用画面にコピーして共有してください。</small><textarea readOnly value={offerCode} onFocus={(event) => event.currentTarget.select()} /></label><label><strong>2. 相手の回答コード</strong><small>相手が作成した回答コードを貼り付けます。</small><textarea value={answerCode} onChange={(event) => setAnswerCode(event.currentTarget.value)} placeholder="回答コードをここに貼り付け" /></label><div className="rtc-signaling-actions"><button className="button button-primary" type="button" disabled={!answerCode.trim()} onClick={() => void acceptAnswer()}>回答コードで接続</button><button className="button button-outline" type="button" onClick={() => void window.jobuhan.window.openJoin()}>相手用画面を開く</button><button className="button button-outline" type="button" onClick={() => void endCall()}>キャンセル</button></div></div>}
-      {(status === "disconnected" || status === "failed" || status === "closed") && <button className="button button-outline" type="button" onClick={() => { setStatus("new"); setError(""); setConsentAudio(false); setConsentVideo(false); }}>接続をやり直す</button>}
+      {(status === "disconnected" || status === "failed" || status === "closed") && <button className="button button-outline" type="button" onClick={() => void retryCall()}>接続をやり直す</button>}
     </>}
     {error && <p className="rtc-error" role="alert">{error}</p>}
   </section>;
