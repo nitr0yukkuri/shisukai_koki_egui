@@ -33,10 +33,10 @@ function sendChunks(backend, sessionId, turnId, count) {
   }
 }
 
-test("1on1で始めると、質問は出ずにセッションだけができる", async () => {
+test("相手出題の1on1で始めると、質問は出ずにセッションだけができる", async () => {
   const { backend, handlers } = setup();
   try {
-    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one" }));
+    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one", questionSource: "partner" }));
     // 質問を出すのは相手なので、アプリは最初の質問を持たない。
     assert.equal(started.prompt, null);
 
@@ -51,7 +51,7 @@ test("1on1で始めると、質問は出ずにセッションだけができる"
 test("相手の質問でターンができ、相手の発言として会話ログに残る", async () => {
   const { backend, handlers } = setup();
   try {
-    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one" }));
+    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one", questionSource: "partner" }));
 
     const asked = unwrap(
       await handlers["practice:partnerQuestion"]({
@@ -80,7 +80,7 @@ test("相手の質問でターンができ、相手の発言として会話ロ�
 test("回答を保存しても、先に入れた相手の発言は消えない", async () => {
   const { backend, handlers } = setup();
   try {
-    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one" }));
+    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one", questionSource: "partner" }));
     const asked = unwrap(
       await handlers["practice:partnerQuestion"]({
         sessionId: started.sessionId,
@@ -124,7 +124,7 @@ test("回答を保存しても、先に入れた相手の発言は消えない",
 test("相手の相づちや深掘りも、同じターンに積める", async () => {
   const { backend, handlers } = setup();
   try {
-    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one" }));
+    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one", questionSource: "partner" }));
     const asked = unwrap(
       await handlers["practice:partnerQuestion"]({
         sessionId: started.sessionId,
@@ -157,7 +157,7 @@ test("相手の相づちや深掘りも、同じターンに積める", async ()
 test("質問を繰り返して、最後に終えると finished になる", async () => {
   const { backend, handlers } = setup();
   try {
-    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one" }));
+    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one", questionSource: "partner" }));
 
     for (const [index, text] of ["1問目です。", "2問目です。", "3問目です。"].entries()) {
       const asked = unwrap(
@@ -191,7 +191,7 @@ test("モードの取り違えはエラーにする", async () => {
   const { backend, handlers } = setup();
   try {
     // 1on1では practice:next を使わない。
-    const oneOnOne = unwrap(await handlers["practice:start"]({ mode: "one_on_one" }));
+    const oneOnOne = unwrap(await handlers["practice:start"]({ mode: "one_on_one", questionSource: "partner" }));
     const next = await handlers["practice:next"]({ sessionId: oneOnOne.sessionId });
     assert.equal(next.ok, false);
     assert.equal(next.error.code, "E_STATE");
@@ -219,7 +219,7 @@ test("モードの取り違えはエラーにする", async () => {
 test("相手の質問は空にできず、長すぎても断る", async () => {
   const { backend, handlers } = setup();
   try {
-    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one" }));
+    const started = unwrap(await handlers["practice:start"]({ mode: "one_on_one", questionSource: "partner" }));
 
     for (const questionText of ["", "   ", "あ".repeat(2001)]) {
       const result = await handlers["practice:partnerQuestion"]({

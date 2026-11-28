@@ -45,25 +45,35 @@ export type JobuhanBridge = {
     delete: (esSetId: number) => Promise<IpcResult<null>>;
   };
   practice: {
-    start: (input: {
-      mode?: "solo" | "one_on_one";
-      esSetId?: number | null;
-      interviewerImageId?: number | null;
-      questionCount?: number;
-    }) => Promise<IpcResult<PracticeStarted>>;
+    start: {
+      (input: {
+        mode?: "solo" | "one_on_one";
+        questionSource?: "app";
+        esSetId?: number | null;
+        interviewerImageId?: number | null;
+        questionCount?: number;
+      }): Promise<IpcResult<Extract<PracticeStarted, { questionSource: "app" }>>>;
+      (input: {
+        mode: "one_on_one";
+        questionSource: "partner";
+        esSetId?: number | null;
+        interviewerImageId?: number | null;
+        questionCount?: number;
+      }): Promise<IpcResult<Extract<PracticeStarted, { questionSource: "partner" }>>>;
+    };
     beginAnswer: (sessionId: number) => Promise<IpcResult<AnswerStarted>>;
     endAnswer: (sessionId: number, turnId: number) => Promise<IpcResult<TurnRecord>>;
     next: (sessionId: number) => Promise<IpcResult<PracticeNextResult>>;
     finish: (sessionId: number, keep: boolean) => Promise<IpcResult<null>>;
     /**
-     * 1on1: 相手が出した質問を登録してターンを作る(EX-01)。
+     * 相手出題の1on1: 相手が出した質問を登録してターンを作る(EX-01)。
      * 相手の音声の取り込み方(U-09)は未決なので、文字になったものを渡す。
      */
     partnerQuestion: (
       sessionId: number,
       questionText: string,
     ) => Promise<IpcResult<PartnerQuestionStarted>>;
-    /** 1on1: 相手の発言を会話ログに残す(EX-02)。 */
+    /** 相手出題の1on1: 相手の発言を会話ログに残す(EX-02)。 */
     partnerSpeech: (input: {
       sessionId: number;
       turnId: number;

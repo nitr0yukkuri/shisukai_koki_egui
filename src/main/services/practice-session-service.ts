@@ -18,6 +18,7 @@ import type {
   PracticeNextResult,
   PracticePrompt,
   PracticeStarted,
+  QuestionSource,
   QuestionSummary,
   TurnRecord,
 } from "../../shared/types.ts";
@@ -25,6 +26,8 @@ import type { QuestionService } from "./question-service.ts";
 
 export type PracticeStartOptions = {
   mode: PracticeMode;
+  /** Defaults to app questions to preserve the existing one-on-one flow. */
+  questionSource?: QuestionSource;
   esSetId: number | null;
   interviewerImageId: number | null;
   questionCount: number;
@@ -34,11 +37,12 @@ export type PracticeStartOptions = {
 type ActivePractice = {
   sessionId: number;
   mode: PracticeMode;
-  /** 1人モードで出す質問の並び。1on1は相手が質問するので空。 */
+  questionSource: QuestionSource;
+  /** アプリが質問を出す場合の質問の並び。 */
   plan: QuestionSummary[];
   /** いま出している質問の位置(0始まり)。 */
   index: number;
-  /** 1on1は相手の質問が来るまでターンがないので null。 */
+  /** partner出題は相手の質問が来るまでターンがないので null。 */
   currentTurnId: number | null;
   answering: boolean;
   /** DB保存に失敗したとき、同じ回答を再保存するためにメモリへ保持する。 */
@@ -88,16 +92,23 @@ export class PracticeSessionService {
       throw new AppError("E_NOT_FOUND", "ESが見つかりません。");
     }
 
+    const questionSource = options.questionSource ?? "app";
+    if (options.mode !== "one_on_one" && questionSource !== "app") {
+      throw new AppError("E_VALIDATION", "相手が質問する形式は1on1でのみ利用できます。");
+    }
+
     const filledEsKinds: EsKind[] = (esSet?.items ?? [])
       .filter((item) => item.body.trim() !== "")
       .map((item) => item.kind);
 
-    // 1on1では質問を出すのは相手(人)なので、質問バンクを使わず、最初のターンも作らない(EX-01)。
-    // ターンは practice:partnerQuestion で相手の質問を受け取ったときにできる。
-    const plan =
-      options.mode === "one_on_one"
-        ? []
-        : this.deps.questions.pick(options.questionCount, filledEsKinds);
+    // 未指定は従来どおりアプリ出題。相手出題は明示選択時だけ質問バンクを使わない。
+    const plan = questionSource === "partner"
+      ? []
+      : this.deps.questions.pick(options.questionCount, filledEsKinds);
+    const first = plan[0];
+    if (questionSource === "app" && !first) {
+      throw new AppError("E_STATE", "最初の質問を準備できませんでした。");
+    }
     const startedAt = this.now();
 
     const { sessionId, turnId } = this.deps.database.transaction(() => {
@@ -108,7 +119,6 @@ export class PracticeSessionService {
         interviewerImageId: options.interviewerImageId,
         startedAt,
       });
-      const first = plan[0];
       const newTurnId = first
         ? this.deps.sessions.createTurn({
             sessionId: newSessionId,
@@ -123,30 +133,41 @@ export class PracticeSessionService {
     this.active = {
       sessionId,
       mode: options.mode,
+      questionSource,
       plan,
       index: 0,
       currentTurnId: turnId,
       answering: false,
     };
 
-    const first = plan[0];
-    return {
-      sessionId,
-      prompt: turnId !== null && first ? this.toPrompt(turnId, 1, first) : null,
-    };
+    if (questionSource === "partner") {
+      return { sessionId, questionSource, prompt: null };
+    }
+
+    if (turnId === null || !first) {
+      throw new AppError("E_STATE", "最初の質問を準備できませんでした。");
+    }
+    return { sessionId, questionSource, prompt: this.toPrompt(turnId, 1, first) };
   }
 
   /**
-   * 1on1: 相手が出した質問でターンを作る(EX-01)。
+   * partner出題の1on1: 相手が出した質問でターンを作る(EX-01)。
    *
    * 質問文は turns.question_text に写し、同じ文を相手の発言としても会話ログに残す(EX-02)。
    * 相手の音声をどう取り込むか(U-09)は未決なので、ここは文字になったものを受け取る。
    * 取り込み方が決まっても、呼ぶ前の処理が変わるだけでここは変えなくてよい。
    */
   askByPartner(sessionId: number, questionText: string): PartnerQuestionStarted {
-    const active = this.requireOneOnOne(sessionId);
+    const active = this.requirePartnerQuestionSession(sessionId);
     if (active.answering || active.pendingAnswer) {
       throw new AppError("E_STATE", "回答中または保存待ちです。先に回答を確定してください。");
+    }
+
+    if (active.currentTurnId !== null) {
+      const current = this.deps.sessions.loadTurnRecord(active.currentTurnId);
+      if (!current || (current.status !== "answered" && current.status !== "skipped")) {
+        throw new AppError("E_STATE", "現在の質問への回答を確定してから、次の質問を登録してください。");
+      }
     }
 
     const seq = this.deps.sessions.countTurns(sessionId) + 1;
@@ -177,7 +198,7 @@ export class PracticeSessionService {
   }
 
   /**
-   * 1on1: 相手の発言を会話ログに残す(EX-02)。
+   * partner出題の1on1: 相手の発言を会話ログに残す(EX-02)。
    * 質問以外の相づちや深掘りも、同じターンに積んでいく。
    */
   recordPartnerSpeech(input: {
@@ -187,7 +208,7 @@ export class PracticeSessionService {
     startMs: number | null;
     endMs: number | null;
   }): PartnerSpeechRecorded {
-    this.requireOneOnOne(input.sessionId);
+    this.requirePartnerQuestionSession(input.sessionId);
 
     const turn = this.deps.sessions.loadTurnRecord(input.turnId);
     if (!turn || turn.sessionId !== input.sessionId) {
@@ -219,7 +240,7 @@ export class PracticeSessionService {
     if (turnId === null) {
       throw new AppError(
         "E_STATE",
-        active.mode === "one_on_one"
+        active.questionSource === "partner"
           ? "まだ質問がありません。相手の質問を登録してから回答してください。"
           : "回答できる質問がありません。",
       );
@@ -306,10 +327,10 @@ export class PracticeSessionService {
   /** 次の質問。残りがなければ練習を終了する。 */
   next(sessionId: number): PracticeNextResult {
     const active = this.requireActive(sessionId);
-    if (active.mode === "one_on_one") {
+    if (active.questionSource === "partner") {
       throw new AppError(
         "E_STATE",
-        "1on1では質問を出すのは相手です。practice:partnerQuestion を使ってください。",
+        "相手が質問する形式では practice:partnerQuestion を使ってください。",
       );
     }
     if (active.answering || active.pendingAnswer) {
@@ -365,9 +386,9 @@ export class PracticeSessionService {
     }
 
     if (session.status === "in_progress") {
-      // 1on1は質問数が決まっていないので、利用者が終えた時点で finished とする。
-      const answeredAll =
-        session.mode === "one_on_one" ||
+      // 相手出題は質問数が決まっていないので、利用者が終えた時点で finished とする。
+      const answeredAll = active?.questionSource === "partner" ||
+        (active === null && session.mode === "one_on_one") ||
         (active !== null && active.index + 1 >= active.plan.length);
       this.deps.sessions.updateSessionStatus(
         sessionId,
@@ -384,10 +405,10 @@ export class PracticeSessionService {
     return this.active;
   }
 
-  private requireOneOnOne(sessionId: number): ActivePractice {
+  private requirePartnerQuestionSession(sessionId: number): ActivePractice {
     const active = this.requireActive(sessionId);
-    if (active.mode !== "one_on_one") {
-      throw new AppError("E_STATE", "1on1モードの練習ではありません。");
+    if (active.mode !== "one_on_one" || active.questionSource !== "partner") {
+      throw new AppError("E_STATE", "相手が質問する1on1モードではありません。");
     }
     return active;
   }

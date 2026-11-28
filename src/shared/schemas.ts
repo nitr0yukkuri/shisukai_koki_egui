@@ -11,6 +11,7 @@ import {
   ES_NAME_MAX_LENGTH,
   PARTNER_TEXT_MAX_LENGTH,
   PRACTICE_MODES,
+  QUESTION_SOURCES,
   QUESTION_COUNT_DEFAULT,
   QUESTION_COUNT_MAX,
   QUESTION_COUNT_MIN,
@@ -37,6 +38,7 @@ export const esSetInputSchema = z.object({
 
 export const practiceStartSchema = z.object({
   mode: z.enum(PRACTICE_MODES).default("solo"),
+  questionSource: z.enum(QUESTION_SOURCES).default("app"),
   esSetId: id.nullable().default(null),
   interviewerImageId: id.nullable().default(null),
   questionCount: z
@@ -45,6 +47,14 @@ export const practiceStartSchema = z.object({
     .min(QUESTION_COUNT_MIN)
     .max(QUESTION_COUNT_MAX)
     .default(QUESTION_COUNT_DEFAULT),
+}).superRefine((value, context) => {
+  if (value.questionSource === "partner" && value.mode !== "one_on_one") {
+    context.addIssue({
+      code: "custom",
+      path: ["questionSource"],
+      message: "相手が質問する形式は1on1でのみ利用できます。",
+    });
+  }
 });
 
 export const sessionIdSchema = z.object({ sessionId: id });
@@ -52,7 +62,7 @@ export const sessionIdSchema = z.object({ sessionId: id });
 export const turnRefSchema = z.object({ sessionId: id, turnId: id });
 
 /**
- * 1on1で相手が出した質問(EX-01)。
+ * 相手出題の1on1で、相手が出した質問(EX-01)。
  * 相手の音声の取り込み方(U-09)は未決なので、処理側は文字になったものを受け取る。
  */
 export const partnerQuestionSchema = z.object({
@@ -60,7 +70,7 @@ export const partnerQuestionSchema = z.object({
   questionText: z.string().trim().min(1).max(PARTNER_TEXT_MAX_LENGTH),
 });
 
-/** 1on1で相手の発言を会話ログに残す(EX-02)。 */
+/** 相手出題の1on1で、相手の発言を会話ログに残す(EX-02)。 */
 export const partnerSpeechSchema = z.object({
   sessionId: id,
   turnId: id,
@@ -68,6 +78,14 @@ export const partnerSpeechSchema = z.object({
   /** 回答開始からの時刻。分からないときは null。 */
   startMs: z.number().int().min(0).nullable().default(null),
   endMs: z.number().int().min(0).nullable().default(null),
+}).superRefine((value, context) => {
+  if (value.startMs !== null && value.endMs !== null && value.endMs < value.startMs) {
+    context.addIssue({
+      code: "custom",
+      path: ["endMs"],
+      message: "終了時刻は開始時刻以降にしてください。",
+    });
+  }
 });
 
 export const practiceFinishSchema = z.object({ sessionId: id, keep: z.boolean().default(true) });

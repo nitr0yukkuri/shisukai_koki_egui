@@ -66,13 +66,13 @@ export function createInvokeHandlers(backend: Backend): Record<InvokeChannel, In
         const input = parse(turnRefSchema, payload);
         return backend.practice.endAnswer(input.sessionId, input.turnId);
       }),
-    // 1on1: 質問を出すのは相手(人)なので、画面から質問文を受け取ってターンを作る(EX-01)。
+    // 相手出題の1on1: 画面から質問文を受け取ってターンを作る(EX-01)。
     [INVOKE_CHANNELS.practicePartnerQuestion]: (payload) =>
       toResult(() => {
         const input = parse(partnerQuestionSchema, payload);
         return backend.practice.askByPartner(input.sessionId, input.questionText);
       }),
-    // 1on1: 相手の発言を会話ログに残す(EX-02)。
+    // 相手出題の1on1: 相手の発言を会話ログに残す(EX-02)。
     [INVOKE_CHANNELS.practicePartnerSpeech]: (payload) =>
       toResult(() => backend.practice.recordPartnerSpeech(parse(partnerSpeechSchema, payload))),
 
