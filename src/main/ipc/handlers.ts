@@ -13,6 +13,8 @@ import {
   consentSetSchema,
   esSetIdSchema,
   esSetInputSchema,
+  partnerQuestionSchema,
+  partnerSpeechSchema,
   practiceFinishSchema,
   practiceStartSchema,
   sessionIdSchema,
@@ -64,6 +66,16 @@ export function createInvokeHandlers(backend: Backend): Record<InvokeChannel, In
         const input = parse(turnRefSchema, payload);
         return backend.practice.endAnswer(input.sessionId, input.turnId);
       }),
+    // 相手出題の1on1: 画面から質問文を受け取ってターンを作る(EX-01)。
+    [INVOKE_CHANNELS.practicePartnerQuestion]: (payload) =>
+      toResult(() => {
+        const input = parse(partnerQuestionSchema, payload);
+        return backend.practice.askByPartner(input.sessionId, input.questionText);
+      }),
+    // 相手出題の1on1: 相手の発言を会話ログに残す(EX-02)。
+    [INVOKE_CHANNELS.practicePartnerSpeech]: (payload) =>
+      toResult(() => backend.practice.recordPartnerSpeech(parse(partnerSpeechSchema, payload))),
+
     [INVOKE_CHANNELS.practiceNext]: (payload) =>
       toResult(() => backend.practice.next(parse(sessionIdSchema, payload).sessionId)),
     [INVOKE_CHANNELS.practiceFinish]: (payload) =>

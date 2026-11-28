@@ -6,6 +6,9 @@
 export const PRACTICE_MODES = ["solo", "one_on_one"] as const;
 export type PracticeMode = (typeof PRACTICE_MODES)[number];
 
+export const QUESTION_SOURCES = ["app", "partner"] as const;
+export type QuestionSource = (typeof QUESTION_SOURCES)[number];
+
 export const SESSION_STATUSES = ["in_progress", "finished", "interrupted"] as const;
 export type SessionStatus = (typeof SESSION_STATUSES)[number];
 
@@ -176,8 +179,36 @@ export type PracticePrompt = {
 
 export type PracticeStarted = {
   sessionId: number;
+  questionSource: "app";
+  /** アプリが出す質問。既定フローでは必ず含まれる。 */
   prompt: PracticePrompt;
+} | {
+  sessionId: number;
+  questionSource: "partner";
+  /** 相手が最初の質問を送るまで prompt はない。 */
+  prompt: null;
 };
+
+/** partner出題の1on1で、相手が出した質問。質問バンクを使わないので QuestionSummary は持たない。 */
+export type PartnerQuestionStarted = {
+  turnId: number;
+  seq: number;
+  questionText: string;
+};
+
+/** partner出題の1on1で会話ログに残した相手の発言(EX-02)。 */
+export type PartnerSpeechRecorded = {
+  turnId: number;
+  utteranceId: number;
+  seq: number;
+};
+
+/**
+ * 相手の質問・発言として受け取るテキストの上限。
+ * 1on1では相手の音声をどう取り込むか(U-09)が未決なので、処理側は
+ * 「すでに文字になったもの」を受け取る。取り込み方が決まっても、ここは変えずに済む。
+ */
+export const PARTNER_TEXT_MAX_LENGTH = 2000;
 
 export type PracticeNextResult =
   | { done: false; prompt: PracticePrompt }

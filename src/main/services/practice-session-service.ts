@@ -12,10 +12,13 @@ import type { SpeechService, SpeechTurnResult } from "../speech/speech-service.t
 import type {
   AnswerStarted,
   EsKind,
+  PartnerQuestionStarted,
+  PartnerSpeechRecorded,
   PracticeMode,
   PracticeNextResult,
   PracticePrompt,
   PracticeStarted,
+  QuestionSource,
   QuestionSummary,
   TurnRecord,
 } from "../../shared/types.ts";
@@ -23,6 +26,8 @@ import type { QuestionService } from "./question-service.ts";
 
 export type PracticeStartOptions = {
   mode: PracticeMode;
+  /** Defaults to app questions to preserve the existing one-on-one flow. */
+  questionSource?: QuestionSource;
   esSetId: number | null;
   interviewerImageId: number | null;
   questionCount: number;
@@ -31,10 +36,14 @@ export type PracticeStartOptions = {
 /** 進行中の練習の覚え書き。質問の並びは表に持たないため、ここで保持する。 */
 type ActivePractice = {
   sessionId: number;
+  mode: PracticeMode;
+  questionSource: QuestionSource;
+  /** アプリが質問を出す場合の質問の並び。 */
   plan: QuestionSummary[];
   /** いま出している質問の位置(0始まり)。 */
   index: number;
-  currentTurnId: number;
+  /** partner出題は相手の質問が来るまでターンがないので null。 */
+  currentTurnId: number | null;
   answering: boolean;
   /** DB保存に失敗したとき、同じ回答を再保存するためにメモリへ保持する。 */
   pendingAnswer?: { turnId: number; result: SpeechTurnResult; endedAt: string };
@@ -83,10 +92,23 @@ export class PracticeSessionService {
       throw new AppError("E_NOT_FOUND", "ESが見つかりません。");
     }
 
+    const questionSource = options.questionSource ?? "app";
+    if (options.mode !== "one_on_one" && questionSource !== "app") {
+      throw new AppError("E_VALIDATION", "相手が質問する形式は1on1でのみ利用できます。");
+    }
+
     const filledEsKinds: EsKind[] = (esSet?.items ?? [])
       .filter((item) => item.body.trim() !== "")
       .map((item) => item.kind);
-    const plan = this.deps.questions.pick(options.questionCount, filledEsKinds);
+
+    // 未指定は従来どおりアプリ出題。相手出題は明示選択時だけ質問バンクを使わない。
+    const plan = questionSource === "partner"
+      ? []
+      : this.deps.questions.pick(options.questionCount, filledEsKinds);
+    const first = plan[0];
+    if (questionSource === "app" && !first) {
+      throw new AppError("E_STATE", "最初の質問を準備できませんでした。");
+    }
     const startedAt = this.now();
 
     const { sessionId, turnId } = this.deps.database.transaction(() => {
@@ -97,18 +119,114 @@ export class PracticeSessionService {
         interviewerImageId: options.interviewerImageId,
         startedAt,
       });
-      const newTurnId = this.deps.sessions.createTurn({
-        sessionId: newSessionId,
-        seq: 1,
-        questionId: plan[0].id,
-        questionText: plan[0].text,
-      });
+      const newTurnId = first
+        ? this.deps.sessions.createTurn({
+            sessionId: newSessionId,
+            seq: 1,
+            questionId: first.id,
+            questionText: first.text,
+          })
+        : null;
       return { sessionId: newSessionId, turnId: newTurnId };
     });
 
-    this.active = { sessionId, plan, index: 0, currentTurnId: turnId, answering: false };
+    this.active = {
+      sessionId,
+      mode: options.mode,
+      questionSource,
+      plan,
+      index: 0,
+      currentTurnId: turnId,
+      answering: false,
+    };
 
-    return { sessionId, prompt: this.toPrompt(turnId, 1, plan[0]) };
+    if (questionSource === "partner") {
+      return { sessionId, questionSource, prompt: null };
+    }
+
+    if (turnId === null || !first) {
+      throw new AppError("E_STATE", "最初の質問を準備できませんでした。");
+    }
+    return { sessionId, questionSource, prompt: this.toPrompt(turnId, 1, first) };
+  }
+
+  /**
+   * partner出題の1on1: 相手が出した質問でターンを作る(EX-01)。
+   *
+   * 質問文は turns.question_text に写し、同じ文を相手の発言としても会話ログに残す(EX-02)。
+   * 相手の音声をどう取り込むか(U-09)は未決なので、ここは文字になったものを受け取る。
+   * 取り込み方が決まっても、呼ぶ前の処理が変わるだけでここは変えなくてよい。
+   */
+  askByPartner(sessionId: number, questionText: string): PartnerQuestionStarted {
+    const active = this.requirePartnerQuestionSession(sessionId);
+    if (active.answering || active.pendingAnswer) {
+      throw new AppError("E_STATE", "回答中または保存待ちです。先に回答を確定してください。");
+    }
+
+    if (active.currentTurnId !== null) {
+      const current = this.deps.sessions.loadTurnRecord(active.currentTurnId);
+      if (!current || (current.status !== "answered" && current.status !== "skipped")) {
+        throw new AppError("E_STATE", "現在の質問への回答を確定してから、次の質問を登録してください。");
+      }
+    }
+
+    const seq = this.deps.sessions.countTurns(sessionId) + 1;
+    const turnId = this.deps.database.transaction(() => {
+      const newTurnId = this.deps.sessions.createTurn({
+        sessionId,
+        seq,
+        // 質問バンクから出していないので question_id は持たない。
+        questionId: null,
+        questionText,
+      });
+      this.deps.sessions.insertUtterance({
+        turnId: newTurnId,
+        seq: 1,
+        speaker: "partner",
+        text: questionText,
+        startMs: null,
+        endMs: null,
+        words: [],
+      });
+      return newTurnId;
+    });
+
+    active.currentTurnId = turnId;
+    active.index = seq - 1;
+
+    return { turnId, seq, questionText };
+  }
+
+  /**
+   * partner出題の1on1: 相手の発言を会話ログに残す(EX-02)。
+   * 質問以外の相づちや深掘りも、同じターンに積んでいく。
+   */
+  recordPartnerSpeech(input: {
+    sessionId: number;
+    turnId: number;
+    text: string;
+    startMs: number | null;
+    endMs: number | null;
+  }): PartnerSpeechRecorded {
+    this.requirePartnerQuestionSession(input.sessionId);
+
+    const turn = this.deps.sessions.loadTurnRecord(input.turnId);
+    if (!turn || turn.sessionId !== input.sessionId) {
+      throw new AppError("E_NOT_FOUND", "質問が見つかりません。");
+    }
+
+    const seq = this.deps.sessions.countUtterances(input.turnId) + 1;
+    const utteranceId = this.deps.sessions.insertUtterance({
+      turnId: input.turnId,
+      seq,
+      speaker: "partner",
+      text: input.text,
+      startMs: input.startMs,
+      endMs: input.endMs,
+      words: [],
+    });
+
+    return { turnId: input.turnId, utteranceId, seq };
   }
 
   /** 回答開始。認識を開いてから、画面が録音を始める。 */
@@ -119,6 +237,14 @@ export class PracticeSessionService {
     }
 
     const turnId = active.currentTurnId;
+    if (turnId === null) {
+      throw new AppError(
+        "E_STATE",
+        active.questionSource === "partner"
+          ? "まだ質問がありません。相手の質問を登録してから回答してください。"
+          : "回答できる質問がありません。",
+      );
+    }
     await this.deps.speech.beginTurn({ sessionId, turnId });
     try {
       this.deps.sessions.startAnswering(turnId, this.now());
@@ -172,10 +298,12 @@ export class PracticeSessionService {
         sttStatus: result.sttStatus,
         endedAt,
       });
+      // 1on1では相手の発言が先に入っているので、その続きの番号から積む。
+      const base = this.deps.sessions.countUtterances(turnId);
       result.segments.forEach((segment, position) => {
         this.deps.sessions.insertUtterance({
           turnId,
-          seq: position + 1,
+          seq: base + position + 1,
           speaker: "user",
           text: segment.text,
           startMs: segment.startMs,
@@ -199,6 +327,12 @@ export class PracticeSessionService {
   /** 次の質問。残りがなければ練習を終了する。 */
   next(sessionId: number): PracticeNextResult {
     const active = this.requireActive(sessionId);
+    if (active.questionSource === "partner") {
+      throw new AppError(
+        "E_STATE",
+        "相手が質問する形式では practice:partnerQuestion を使ってください。",
+      );
+    }
     if (active.answering || active.pendingAnswer) {
       throw new AppError("E_STATE", "回答中または保存待ちです。先に回答を確定してください。");
     }
@@ -252,7 +386,10 @@ export class PracticeSessionService {
     }
 
     if (session.status === "in_progress") {
-      const answeredAll = active !== null && active.index + 1 >= active.plan.length;
+      // 相手出題は質問数が決まっていないので、利用者が終えた時点で finished とする。
+      const answeredAll = active?.questionSource === "partner" ||
+        (active === null && session.mode === "one_on_one") ||
+        (active !== null && active.index + 1 >= active.plan.length);
       this.deps.sessions.updateSessionStatus(
         sessionId,
         answeredAll ? "finished" : "interrupted",
@@ -266,6 +403,14 @@ export class PracticeSessionService {
       throw new AppError("E_STATE", "進行中の練習が見つかりません。");
     }
     return this.active;
+  }
+
+  private requirePartnerQuestionSession(sessionId: number): ActivePractice {
+    const active = this.requireActive(sessionId);
+    if (active.mode !== "one_on_one" || active.questionSource !== "partner") {
+      throw new AppError("E_STATE", "相手が質問する1on1モードではありません。");
+    }
+    return active;
   }
 
   private toPrompt(turnId: number, seq: number, question: QuestionSummary): PracticePrompt {

@@ -13,6 +13,8 @@ const INVOKE = {
   practiceEndAnswer: "practice:endAnswer",
   practiceNext: "practice:next",
   practiceFinish: "practice:finish",
+  practicePartnerQuestion: "practice:partnerQuestion",
+  practicePartnerSpeech: "practice:partnerSpeech",
   historyList: "history:list",
   historyGet: "history:get",
   historyDelete: "history:delete",
@@ -59,6 +61,10 @@ contextBridge.exposeInMainWorld("jobuhan", {
       ipcRenderer.invoke(INVOKE.practiceEndAnswer, { sessionId, turnId }),
     next: (sessionId) => ipcRenderer.invoke(INVOKE.practiceNext, { sessionId }),
     finish: (sessionId, keep) => ipcRenderer.invoke(INVOKE.practiceFinish, { sessionId, keep }),
+    // 1on1(EX-01・02)。相手の音声の取り込み方(U-09)が決まるまでは、画面が文字を渡す。
+    partnerQuestion: (sessionId, questionText) =>
+      ipcRenderer.invoke(INVOKE.practicePartnerQuestion, { sessionId, questionText }),
+    partnerSpeech: (input) => ipcRenderer.invoke(INVOKE.practicePartnerSpeech, input),
   },
   history: {
     list: () => ipcRenderer.invoke(INVOKE.historyList),

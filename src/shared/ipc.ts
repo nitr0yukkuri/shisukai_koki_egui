@@ -11,6 +11,10 @@ export const INVOKE_CHANNELS = {
   practiceEndAnswer: "practice:endAnswer",
   practiceNext: "practice:next",
   practiceFinish: "practice:finish",
+  /** 相手出題の1on1: 相手が出した質問でターンを作る(EX-01)。 */
+  practicePartnerQuestion: "practice:partnerQuestion",
+  /** 相手出題の1on1: 相手の発言を会話ログに残す(EX-02)。 */
+  practicePartnerSpeech: "practice:partnerSpeech",
   historyList: "history:list",
   historyGet: "history:get",
   historyDelete: "history:delete",
