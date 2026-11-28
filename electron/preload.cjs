@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld("jobuhan", {
     minimize: () => ipcRenderer.invoke("window:minimize"),
     toggleMaximize: () => ipcRenderer.invoke("window:toggle-maximize"),
     close: () => ipcRenderer.invoke("window:close"),
+    openJoin: () => ipcRenderer.invoke("window:open-join"),
   },
   es: {
     list: () => ipcRenderer.invoke(INVOKE.esList),
