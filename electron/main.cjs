@@ -106,19 +106,22 @@ function openJoinWindow(event) {
   createWindow(true);
 }
 
-session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
-  callback(mayUseMedia(contents, permission, details));
-});
-session.defaultSession.setPermissionCheckHandler((contents, permission, requestingOrigin, details) => {
-  if (!mayUseMedia(contents, permission, details)) return false;
-  if (requestingOrigin) {
-    try {
-      const origin = new URL(requestingOrigin);
-      return app.isPackaged ? origin.protocol === "file:" : origin.origin === "http://127.0.0.1:5173";
-    } catch { return false; }
-  }
-  return true;
-});
+function registerMediaPermissionHandlers() {
+  const appSession = session.defaultSession;
+  appSession.setPermissionRequestHandler((contents, permission, callback, details) => {
+    callback(mayUseMedia(contents, permission, details));
+  });
+  appSession.setPermissionCheckHandler((contents, permission, requestingOrigin, details) => {
+    if (!mayUseMedia(contents, permission, details)) return false;
+    if (requestingOrigin) {
+      try {
+        const origin = new URL(requestingOrigin);
+        return app.isPackaged ? origin.protocol === "file:" : origin.origin === "http://127.0.0.1:5173";
+      } catch { return false; }
+    }
+    return true;
+  });
+}
 
 ipcMain.handle("window:minimize", (event) => getTrustedWindow(event)?.minimize());
 
@@ -152,6 +155,7 @@ async function startBackend() {
 }
 
 app.whenReady().then(async () => {
+  registerMediaPermissionHandlers();
   await startBackend();
   createWindow();
   app.on("activate", () => {
